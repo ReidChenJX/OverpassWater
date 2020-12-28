@@ -1,0 +1,196 @@
+# -*- coding:utf-8 -*-
+
+import numpy as np
+import pandas as pd
+import time
+from datetime import datetime, timedelta
+
+'''数据表overpass8_9data，属性表overpass_abute'''
+'''结果：降雨数据表 rain_data 降雨时间，持续时间，降雨量；观测站表 observe_abute 观测站属性与降雨总量，降雨时长'''
+
+'''根据S_STATIONID，推算降雨开始时间，结束时间，降雨量'''
+def rain_data(observe_rain_data, observe_abute):
+    # 记录雨量站，降雨时间，降雨量，雨量评级。默认0.2/小时为降雨
+    rain_data = pd.DataFrame(columns=['S_STATIONID', 'START_TIME', 'END_TIME',
+                                      'DURATION', 'N_RAINVALUE', 'RANK', 'S_DIST'])
+    rain_data_index = 0
+    
+    observe_index = observe_abute.index
+    for stationID in observe_index:
+        # 根据S_STATIONID获取观察点的数据
+        rain_value = observe_rain_data[observe_rain_data['S_STATIONID'] == stationID][[
+                    'S_STATIONID', 'D_TIME', 'N_RAINVALUE', 'S_DIST']]
+        rain_value.sort_values('D_TIME', inplace=True)  # 按照时间排序
+    
+        # 依次读取监测数据，记录降雨开始时间，结束时间，降雨量
+        log = 0             # 标志位，1代表正在下雨
+        duration = 0        # 降雨持续时间
+        rain_fall = 0.0     # 总降雨量
+        rank = 0            # 降雨等级
+    
+        for value in rain_value.itertuples(index=False):
+            if value.N_RAINVALUE >= 0.2 and log == 0:       # 开始降雨
+                start_time = datetime.strptime(value.D_TIME, '%Y-%m-%d %H:%M:%S')   # 转化为时间格式
+                start_time += timedelta(hours=-1)           # 时间前移一小时
+                rain_fall += value.N_RAINVALUE
+                log = 1
+            elif value.N_RAINVALUE < 0.2 and log == 0:      # 未降雨
+                continue
+            elif value.N_RAINVALUE >= 0.2 and log == 1:     #正在降雨
+                rain_fall += value.N_RAINVALUE
+            elif value.N_RAINVALUE < 0.2 and log == 1:      # 雨停
+                end_time = datetime.strptime(value.D_TIME, '%Y-%m-%d %H:%M:%S')  # 转化为时间格式
+                end_time += timedelta(hours=-1)  # 时间前移一小时
+                duration = end_time - start_time
+                duration = duration.seconds / 3600
+                # 根据降雨时间与降雨量判断降雨级别：小雨，中雨，大雨，暴雨，大暴雨，特大暴雨
+                if (duration <= 12 and rain_fall <= 5) or (duration > 12 and rain_fall <= 10):
+                    rank = 1
+                elif (duration <= 12 and rain_fall <= 15) or (duration > 12 and rain_fall <= 25):
+                    rank = 2
+                elif (duration <= 12 and rain_fall <= 30) or (duration > 12 and rain_fall <= 50):
+                    rank = 3
+                elif rain_fall <= 100:
+                    rank = 4
+                elif rain_fall <= 250:
+                    rank = 5
+                else: rank = 6
+                if value.S_DIST == '<Null>':
+                    s_dist = '无'
+                else: s_dist = value.S_DIST
+                rain_data.loc[rain_data_index] = [value.S_STATIONID, start_time, end_time,
+                                                  duration, rain_fall, rank, s_dist]
+                log, rain_fall, rank= 0, 0, 0
+                rain_data_index += 1
+
+    rain_data.to_csv('./data/rain_data.csv', encoding='gbk', index=False)
+    return rain_data
+
+'''统计降雨信息，并将统计数据插入observe_abute属性表'''
+def observe_abute(rain_data,observe_abute):
+    # 统计降雨总量
+    rainTimeFall = rain_data[['S_STATIONID', 'DURATION', 'N_RAINVALUE']]
+    
+    # 统计 降雨总量，降雨总时长
+    rainTimeFall_sum = rainTimeFall.groupby('S_STATIONID').sum()
+    
+    observe_index = rainTimeFall_sum.index
+    observe_frq = list(rain_data['S_STATIONID'])
+    
+    observe_abute[['RAINFALL', 'DURATION', 'FREQU']] = ''
+    for index in observe_index:
+        observe_abute.loc[index,'RAINFALL'] =rainTimeFall_sum.loc[index,'N_RAINVALUE']
+        observe_abute.loc[index, 'DURATION'] = rainTimeFall_sum.loc[index, 'DURATION']
+        observe_abute.loc[index, 'FREQU'] = observe_frq.count(index)
+    
+    observe_abute.to_csv('./data/observe_abute.csv', encoding='gbk')
+    
+'''统计地区降雨信息：降雨量，降雨时长，降雨次数'''
+def region_rain(rain_data, observe_abute):
+    
+    # 创建地区表，维护地区性降雨时长，降雨rank（求最大）
+    all_dict = set(rain_data['S_DIST'])
+    region_rain = pd.DataFrame(columns=['S_DIST', 'START_TIME', 'END_TIME', 'DURATION', 'RANK', 'DI_OB', 'RA_OB'])
+    region_rain_index = 0
+    
+    for s_dict in all_dict:
+        # 该地区的所有降雨按时间排序
+        rainFoTime = rain_data[rain_data['S_DIST'] == s_dict].sort_values('START_TIME')
+        # 获得该地区的观察点数量
+        dict_observe = observe_abute[observe_abute['S_DIST'] == s_dict]['S_STATIONNAME'].count()
+        # 根据降雨时间表，统计本次有记录降雨数量的观察站数
+        rain_observe = len(set(rainFoTime['S_STATIONID']))
+        
+        # 依次判断每一行降雨数据
+        start_time = datetime.strptime('2020-08-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+        end_time = datetime.strptime('2020-08-01 00:00:00', '%Y-%m-%d %H:%M:%S')
+        rain_index =list()      # 用于存储本次地区影响的所有降雨
+        log = 0         # 用于跳过第一次初始化的写入，直接转变为1
+        for value in rainFoTime.itertuples(index=True):
+            if log == 0:    # 初始化
+                start_time = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
+                end_time = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                rain_index.append(value.Index)      # 记录当前降雨行为本次降雨
+                log += 1
+            else:
+                the_start = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
+                the_end = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                
+                if start_time <= the_start <= end_time:     # 本行降雨依旧在本次降雨内
+                    end_time = max(end_time, the_end)
+                    rain_index.append(value.Index)
+                else:       # 本行降雨不在本次降雨，需将本次降雨存入region_rain，并开始新的降雨
+                    # 本次降雨的时长
+                    duration = end_time - start_time
+                    duration = duration.seconds / 3600
+                    # 本次降雨的等级
+                    the_rain = rainFoTime.loc[rain_index]
+                    rank = max(the_rain['RANK'])
+                    
+                    region_rain.loc[region_rain_index] = [s_dict, start_time, end_time,
+                                                          duration, rank,dict_observe, rain_observe]
+                    region_rain_index += 1
+                    # 开始新的降雨计数
+                    start_time = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
+                    end_time = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                    rain_index = []
+                    rain_index.append(value.Index)
+
+    region_rain.to_csv('./data/region_rain.csv', encoding='gbk', index=False)
+    return region_rain
+
+
+
+if __name__ == '__main__':
+    path = './data/mouth8-9rain_data.csv'
+    observe_rain_data = pd.read_csv(path, encoding='gbk')
+    # 数据格式 [575470 rows x 6 columns]
+    # 对属性缺失值进行中文“无”的填充
+    
+    columns = ['S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']
+    for column in columns:
+        observe_rain_data[column].fillna(value='无', inplace=True)
+    
+    # 维护S_STATIONID与观测站属性关联
+    observe_abute = observe_rain_data[['S_STATIONID', 'S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']].copy(deep=True)
+    observe_abute.drop_duplicates('S_STATIONID', inplace=True)
+    observe_abute.set_index(keys='S_STATIONID', inplace=True)
+    
+    # rain_data = rain_data(observe_rain_data, observe_abute)
+    # observe_abute(rain_data,observe_abute)
+    rain_data = pd.read_csv('./data/rain_data.csv', encoding='gbk')
+    region_rain = region_rain(rain_data, observe_abute)
+    
+    # '''定义函数，下立交积水点对应的雨量站，进行异常值监测'''
+    # overpass_abute = pd.read_csv('./data/overpass_abute.csv', encoding='gbk')
+    # snoTostation = overpass_abute[['S_NO', 'S_STATIONID']].copy(deep=True)
+    # snoTostation.set_index('S_NO', inplace=True)
+    #
+    # # 提供有问题的S_NO
+    # neg_sno = [2016050010, 1701120019, 2015060096]
+    # neg_station = pd.DataFrame(columns=['S_NO', 'S_STATIONID', 'S_STATIONNAME', 'LOG'])
+    # neg_station_index = 0
+    # # 对应的S_STATIONID
+    # for sno in neg_sno:
+    #
+    #     stationId = snoTostation.loc[sno, 'S_STATIONID']
+    #     oneIDrain = observe_rain_data[observe_rain_data['S_STATIONID'] == stationId]
+    #     if stationId not in observe_abute.index:
+    #     # if len(oneIDrain) == 0:
+    #         log = '无监测数据'
+    #         neg_station.loc[neg_station_index, 'S_NO'] = sno
+    #         neg_station.loc[neg_station_index, 'S_STATIONID'] = stationId
+    #         neg_station.loc[neg_station_index, 'LOG'] = log
+    #         neg_station_index += 1
+    #     else:
+    #         log = '有监测数据'
+    #         neg_station.loc[neg_station_index, 'S_NO'] = sno
+    #         neg_station.loc[neg_station_index, 'S_STATIONID'] = stationId
+    #         neg_station.loc[neg_station_index, 'S_STATIONNAME'] = observe_abute.loc[stationId, 'S_STATIONNAME']
+    #         neg_station.loc[neg_station_index, 'LOG'] = log
+    #         neg_station_index += 1
+        
+        
+        
+        
+    
