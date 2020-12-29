@@ -1,9 +1,14 @@
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
+# @time     : 2020/12/29
+# @Author   : ReidChen
 
 import pandas as pd
 import numpy as np
-import time
-import datetime
+import sys
+sys.path.append('./')
+import OPTools
+
 
 '''数据表overpass8_9data，属性表overpass_abute'''
 '''结果：异常积水点 overpass_neg，积水时间与深度 hydrops_data，积水属性与频次 overpass_table'''
@@ -150,6 +155,8 @@ def dict_overpass_table(overpass_abute):
 if __name__ == '__main__':
     path = './data/mouth8-9Overpass.csv'
     overpass8_9data = pd.read_csv(path,encoding='gbk')
+    # 减少内存使用
+    overpass8_9data = OPTools.otMenory(overpass8_9data)
     # 数据格式 [3504465 rows x 10 columns]
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_ADDR', 'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT', 'S_MAINTAIN_UNIT', 'S_STATIONNAME']

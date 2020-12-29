@@ -1,4 +1,7 @@
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
+# @time     : 2020/12/29
+# @Author   : ReidChen
 
 import pandas as pd
 import numpy as np
@@ -10,7 +13,7 @@ rain_data = pd.read_csv('./data/rain_data.csv', encoding='gbk')
 snoTostation = overpass_abute[['S_NO', 'S_STATIONID']].copy(deep=True)
 del overpass_abute
 
-
+'''rain_flood: 一次积水，对应降雨观测点最符合的降雨数据，并判断是雨中积水还是雨后积水'''
 # 建立S_NO与S_STATIONID的联系
 snoTostation.set_index('S_NO',inplace=True)
 
@@ -43,6 +46,7 @@ for i in range(rain_flood_len):
             
             # 赋值结束，跳出本次循环，继续上级循环
             break
+        #
         elif (one_rain.END_TIME <= rain_flood.loc[i,'START_TIME'])  \
                 and ( (one_rain.Index == max(one_allRain.index)) or rain_flood.loc[i,'START_TIME'] <= one_allRain.loc[one_rain.Index+1,'START_TIME']):
             # 下雨过后，产生积水

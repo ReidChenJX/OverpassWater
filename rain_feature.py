@@ -1,9 +1,15 @@
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
+# @time     : 2020/12/29
+# @Author   : ReidChen
 
 import numpy as np
 import pandas as pd
 import time
 from datetime import datetime, timedelta
+import sys
+sys.path.append('./')
+import OPTools
 
 '''数据表overpass8_9data，属性表overpass_abute'''
 '''结果：降雨数据表 rain_data 降雨时间，持续时间，降雨量；观测站表 observe_abute 观测站属性与降雨总量，降雨时长'''
@@ -144,6 +150,8 @@ def region_rain(rain_data, observe_abute):
 if __name__ == '__main__':
     path = './data/mouth8-9rain_data.csv'
     observe_rain_data = pd.read_csv(path, encoding='gbk')
+    # 减少内存使用
+    observe_rain_data = OPTools.otMenory(observe_rain_data)
     # 数据格式 [575470 rows x 6 columns]
     # 对属性缺失值进行中文“无”的填充
     
@@ -156,41 +164,7 @@ if __name__ == '__main__':
     observe_abute.drop_duplicates('S_STATIONID', inplace=True)
     observe_abute.set_index(keys='S_STATIONID', inplace=True)
     
-    # rain_data = rain_data(observe_rain_data, observe_abute)
-    # observe_abute(rain_data,observe_abute)
-    rain_data = pd.read_csv('./data/rain_data.csv', encoding='gbk')
-    region_rain = region_rain(rain_data, observe_abute)
-    
-    # '''定义函数，下立交积水点对应的雨量站，进行异常值监测'''
-    # overpass_abute = pd.read_csv('./data/overpass_abute.csv', encoding='gbk')
-    # snoTostation = overpass_abute[['S_NO', 'S_STATIONID']].copy(deep=True)
-    # snoTostation.set_index('S_NO', inplace=True)
-    #
-    # # 提供有问题的S_NO
-    # neg_sno = [2016050010, 1701120019, 2015060096]
-    # neg_station = pd.DataFrame(columns=['S_NO', 'S_STATIONID', 'S_STATIONNAME', 'LOG'])
-    # neg_station_index = 0
-    # # 对应的S_STATIONID
-    # for sno in neg_sno:
-    #
-    #     stationId = snoTostation.loc[sno, 'S_STATIONID']
-    #     oneIDrain = observe_rain_data[observe_rain_data['S_STATIONID'] == stationId]
-    #     if stationId not in observe_abute.index:
-    #     # if len(oneIDrain) == 0:
-    #         log = '无监测数据'
-    #         neg_station.loc[neg_station_index, 'S_NO'] = sno
-    #         neg_station.loc[neg_station_index, 'S_STATIONID'] = stationId
-    #         neg_station.loc[neg_station_index, 'LOG'] = log
-    #         neg_station_index += 1
-    #     else:
-    #         log = '有监测数据'
-    #         neg_station.loc[neg_station_index, 'S_NO'] = sno
-    #         neg_station.loc[neg_station_index, 'S_STATIONID'] = stationId
-    #         neg_station.loc[neg_station_index, 'S_STATIONNAME'] = observe_abute.loc[stationId, 'S_STATIONNAME']
-    #         neg_station.loc[neg_station_index, 'LOG'] = log
-    #         neg_station_index += 1
-        
-        
-        
-        
+    rain_data = rain_data(observe_rain_data, observe_abute)     # 记录每一场雨
+    observe_abute(rain_data,observe_abute)                      # 观察点属性表
+    region_rain = region_rain(rain_data, observe_abute)         # 按地区区分降雨
     

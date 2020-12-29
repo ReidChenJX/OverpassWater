@@ -1,4 +1,7 @@
+#!/usr/bin/python3
 # -*- coding:utf-8 -*-
+# @time     : 2020/12/29
+# @Author   : ReidChen
 
 import pandas as pd
 import cx_Oracle
