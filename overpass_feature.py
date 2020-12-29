@@ -9,8 +9,8 @@ import datetime
 '''结果：异常积水点 overpass_neg，积水时间与深度 hydrops_data，积水属性与频次 overpass_table'''
 
 
-'''查找数据中的异常值，并记录在文件中'''
-def anomalyData():
+'''查找数据中的异常值，并记录在 overpass_neg 文件中'''
+def anomalyData(overpass8_9data):
     # 查出异常积水点：数值为负，离线状态，无地址，无对应降雨观察点
     overpass_neg = pd.DataFrame(columns=['S_NO','NEG_VALUE','LINE_Off','NO_ADDR','NO_RAIN'])
     
@@ -60,7 +60,7 @@ def overpassPosData(all_index, neg_index):
             pos_index.append(XLJ)
     return pos_index
 
-'''根据可用的S_NO，推算积水开始时间，积水结束时间，积水深度，积水级别'''
+'''根据可用的S_NO，推算积水开始时间，积水结束时间，积水深度，积水级别，并记录在 hydrops_data 文件中'''
 def hydrops_data(pos_index):
     # 积水级别：（10-15）一级，（15-25）二级，（25-50）三级，（50--）四级
     hydrops_data = pd.DataFrame(columns=['S_NO', 'START_TIME', 'END_TIME', 'DEEP', 'RANK'])
@@ -124,9 +124,27 @@ def overpass_table(hydrops_data):
         overpass_abute.loc[index,'MAX_DEEP'] = deep_max.loc[index,'DEEP']
         overpass_abute.loc[index,'FREQU'] = deep_SNO_list.count(index)
     
+    return overpass_abute
+
+'''向 overpass_abute 属性表中，插入对应雨量观察站的位置信息，并生成overpass_abute文件'''
+def dict_overpass_table(overpass_abute):
+    
+    overpass_abute['S_DIST'] = ''
+    # 从降雨观察站属性表中获取位置信息
+    rain_data = pd.read_csv('./data/observe_abute.csv', encoding='gbk')
+    rain_data.set_index('S_STATIONID', inplace=True)
+    
+    for s_no in overpass_abute.index:
+
+        # 获取对应的STATIONID
+        S_STATIONID = overpass_abute.loc[s_no, 'S_STATIONID']
+        # 获取STATIONID对应的S_DIST
+        if S_STATIONID not in rain_data.index:
+            continue
+        S_DIST = rain_data.loc[S_STATIONID, 'S_DIST']
+        overpass_abute.loc[s_no, 'S_DIST'] = S_DIST
     
     overpass_abute.to_csv('./data./overpass_abute.csv',encoding='gbk',)
-    return overpass_abute
 
 
 if __name__ == '__main__':
@@ -147,9 +165,10 @@ if __name__ == '__main__':
     
     
     
-    overpass_neg = anomalyData()                # 异常值数据
-    neg_index = list(overpass_neg['S_NO'])      # 异常积水点
-    all_index = overpass_abute.index            # 所有观察点的S_NO
+    overpass_neg = anomalyData(overpass8_9data)     # 异常值数据
+    neg_index = list(overpass_neg['S_NO'])          # 异常积水点
+    all_index = overpass_abute.index                # 所有观察点的S_NO
     pos_index = overpassPosData(all_index, neg_index)       # 正常可分析积水点
-    hydrops_data = hydrops_data(pos_index)      # 根据可用S_NO,获取积水数据(时间，深度，级别）
-    overpass_table = overpass_table(hydrops_data)           #整理最终属性表，包括积水次数，平均深度，最大深度
+    hydrops_data = hydrops_data(pos_index)          # 根据可用S_NO,获取积水数据(时间，深度，级别）
+    overpass_abute = overpass_table(hydrops_data)           # 整理最初的属性表，包括积水次数，平均深度，最大深度
+    overpass_abute = dict_overpass_table(overpass_abute)    # 向overpass_abute中插入降雨观察站的位置信息
