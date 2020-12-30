@@ -28,7 +28,7 @@ for i in range(rain_flood_len):
     # 第 i 行的s_no
     rain_flood_sno = rain_flood.loc[i,'S_NO']
     # 对应的观察点ID
-    stationID = snoTostation.loc[rain_flood_sno,'S_STATIONID']
+    stationID = snoTostation.loc[str(rain_flood_sno),'S_STATIONID']
     # 该观察点所有的降雨情况
     one_allRain = rain_data[rain_data['S_STATIONID'] == stationID]
 
@@ -57,5 +57,6 @@ for i in range(rain_flood_len):
             rain_flood.loc[i, 'N_RAINVALUE'] = one_rain.N_RAINVALUE
             rain_flood.loc[i, 'RANK'] = one_rain.RANK
             rain_flood.loc[i, 'DEFINE'] = '停雨积水'
+            break
         
 rain_flood.to_csv('./data/rain_flood.csv',index=False,encoding='gbk')

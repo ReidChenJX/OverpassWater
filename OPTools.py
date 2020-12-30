@@ -15,7 +15,7 @@ def otMenory(data):
     
     obj = data.select_dtypes('object')
     for col in obj.columns:
-        if len(obj[col].unique()) / len(obj[col]) < 0.5:
+        if len(obj[col].unique()) / len(obj[col]) < 0.4:
             data[col] = data[col].astype('category')
     
     return data

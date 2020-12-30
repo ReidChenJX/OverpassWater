@@ -15,17 +15,17 @@ import OPTools
 
 
 '''查找数据中的异常值，并记录在 overpass_neg 文件中'''
-def anomalyData(overpass8_9data):
+def anomalyData(overpass_abute):
     # 查出异常积水点：数值为负，离线状态，无地址，无对应降雨观察点
     overpass_neg = pd.DataFrame(columns=['S_NO','NEG_VALUE','LINE_Off','NO_ADDR','NO_RAIN'])
     
     S_NO, NEG_VALUE, LINE_Off, NO_ADDR, NO_RAIN = list(),list(),list(),list(),list()
     
-    for row in overpass8_9data.itertuples(index=True):
+    for row in overpass_abute.itertuples(index=True):
         if row.N_VALUE < 0 or row.S_STATENAME != '正常' or row.S_ADDR == '无' or row.S_STATIONID == np.nan:
         # 若为异常情况，需要记录到overpass_neg内
-            if row.S_NO not in S_NO:
-                S_NO.append(row.S_NO)
+            if row.Index not in S_NO:
+                S_NO.append(row.Index)
                 if row.N_VALUE < 0: NEG_VALUE.append(row.N_VALUE)
                 else: NEG_VALUE.append('正值')
                 # 若离线则设置为1
@@ -148,31 +148,34 @@ def dict_overpass_table(overpass_abute):
             continue
         S_DIST = rain_data.loc[S_STATIONID, 'S_DIST']
         overpass_abute.loc[s_no, 'S_DIST'] = S_DIST
-    
+        
+    # 删除数值列。
+    overpass_abute.drop(columns=['N_VALUE'],inplace=True)
     overpass_abute.to_csv('./data./overpass_abute.csv',encoding='gbk',)
 
 
 if __name__ == '__main__':
     path = './data/mouth8-9Overpass.csv'
-    overpass8_9data = pd.read_csv(path,encoding='gbk')
-    # 减少内存使用
-    overpass8_9data = OPTools.otMenory(overpass8_9data)
-    # 数据格式 [3504465 rows x 10 columns]
+    overpass8_9data = pd.read_csv(path, encoding='gbk', low_memory=False)
+    
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_ADDR', 'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT', 'S_MAINTAIN_UNIT', 'S_STATIONNAME']
     for column in columns:
         overpass8_9data[column].fillna(value='无', inplace=True)
+    # 时间格式转化
+    overpass8_9data['T_SYSTIME'] = pd.to_datetime(overpass8_9data['T_SYSTIME'])
     
+    # 减少内存使用
+    overpass8_9data = OPTools.otMenory(overpass8_9data)
+
     # 维护S_NO与下立交属性关联
-    overpass_abute = overpass8_9data[['S_NO', 'S_HASMONITOR', 'S_STATENAME', 'S_ADDR',
+    overpass_abute = overpass8_9data[['S_NO', 'S_HASMONITOR', 'N_VALUE', 'S_STATENAME', 'S_ADDR',
                                       'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT',
                                       'S_MAINTAIN_UNIT', 'S_STATIONID', 'S_STATIONNAME']].copy(deep=True)
     overpass_abute.drop_duplicates('S_NO', inplace=True)
     overpass_abute.set_index(keys='S_NO', inplace=True)
-    
-    
-    
-    overpass_neg = anomalyData(overpass8_9data)     # 异常值数据
+
+    overpass_neg = anomalyData(overpass_abute)     # 异常值数据
     neg_index = list(overpass_neg['S_NO'])          # 异常积水点
     all_index = overpass_abute.index                # 所有观察点的S_NO
     pos_index = overpassPosData(all_index, neg_index)       # 正常可分析积水点

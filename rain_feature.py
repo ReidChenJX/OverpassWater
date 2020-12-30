@@ -5,7 +5,6 @@
 
 import numpy as np
 import pandas as pd
-import time
 from datetime import datetime, timedelta
 import sys
 sys.path.append('./')
@@ -36,7 +35,7 @@ def rain_data(observe_rain_data, observe_abute):
     
         for value in rain_value.itertuples(index=False):
             if value.N_RAINVALUE >= 0.2 and log == 0:       # 开始降雨
-                start_time = datetime.strptime(value.D_TIME, '%Y-%m-%d %H:%M:%S')   # 转化为时间格式
+                start_time = value.D_TIME
                 start_time += timedelta(hours=-1)           # 时间前移一小时
                 rain_fall += value.N_RAINVALUE
                 log = 1
@@ -45,7 +44,7 @@ def rain_data(observe_rain_data, observe_abute):
             elif value.N_RAINVALUE >= 0.2 and log == 1:     #正在降雨
                 rain_fall += value.N_RAINVALUE
             elif value.N_RAINVALUE < 0.2 and log == 1:      # 雨停
-                end_time = datetime.strptime(value.D_TIME, '%Y-%m-%d %H:%M:%S')  # 转化为时间格式
+                end_time = value.D_TIME
                 end_time += timedelta(hours=-1)  # 时间前移一小时
                 duration = end_time - start_time
                 duration = duration.seconds / 3600
@@ -73,7 +72,7 @@ def rain_data(observe_rain_data, observe_abute):
     return rain_data
 
 '''统计降雨信息，并将统计数据插入observe_abute属性表'''
-def observe_abute(rain_data,observe_abute):
+def observe_abute_table(rain_data,observe_abute):
     # 统计降雨总量
     rainTimeFall = rain_data[['S_STATIONID', 'DURATION', 'N_RAINVALUE']]
     
@@ -108,19 +107,17 @@ def region_rain(rain_data, observe_abute):
         rain_observe = len(set(rainFoTime['S_STATIONID']))
         
         # 依次判断每一行降雨数据
-        start_time = datetime.strptime('2020-08-01 00:00:00', '%Y-%m-%d %H:%M:%S')
-        end_time = datetime.strptime('2020-08-01 00:00:00', '%Y-%m-%d %H:%M:%S')
         rain_index =list()      # 用于存储本次地区影响的所有降雨
         log = 0         # 用于跳过第一次初始化的写入，直接转变为1
         for value in rainFoTime.itertuples(index=True):
             if log == 0:    # 初始化
-                start_time = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
-                end_time = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                start_time = value.START_TIME
+                end_time = value.END_TIME
                 rain_index.append(value.Index)      # 记录当前降雨行为本次降雨
                 log += 1
             else:
-                the_start = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
-                the_end = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                the_start = value.START_TIME
+                the_end = value.END_TIME
                 
                 if start_time <= the_start <= end_time:     # 本行降雨依旧在本次降雨内
                     end_time = max(end_time, the_end)
@@ -137,8 +134,8 @@ def region_rain(rain_data, observe_abute):
                                                           duration, rank,dict_observe, rain_observe]
                     region_rain_index += 1
                     # 开始新的降雨计数
-                    start_time = datetime.strptime(value.START_TIME, '%Y-%m-%d %H:%M:%S')
-                    end_time = datetime.strptime(value.END_TIME, '%Y-%m-%d %H:%M:%S')
+                    start_time = value.START_TIME
+                    end_time = value.END_TIME
                     rain_index = []
                     rain_index.append(value.Index)
 
@@ -150,21 +147,23 @@ def region_rain(rain_data, observe_abute):
 if __name__ == '__main__':
     path = './data/mouth8-9rain_data.csv'
     observe_rain_data = pd.read_csv(path, encoding='gbk')
-    # 减少内存使用
-    observe_rain_data = OPTools.otMenory(observe_rain_data)
-    # 数据格式 [575470 rows x 6 columns]
-    # 对属性缺失值进行中文“无”的填充
     
+    # 对属性缺失值进行中文“无”的填充
     columns = ['S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']
     for column in columns:
         observe_rain_data[column].fillna(value='无', inplace=True)
-    
+    # 时间格式转化
+    observe_rain_data['D_TIME'] = pd.to_datetime(observe_rain_data['D_TIME'])
+        
+    # 减少内存使用
+    observe_rain_data = OPTools.otMenory(observe_rain_data)
+
     # 维护S_STATIONID与观测站属性关联
     observe_abute = observe_rain_data[['S_STATIONID', 'S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']].copy(deep=True)
     observe_abute.drop_duplicates('S_STATIONID', inplace=True)
     observe_abute.set_index(keys='S_STATIONID', inplace=True)
-    
+
     rain_data = rain_data(observe_rain_data, observe_abute)     # 记录每一场雨
-    observe_abute(rain_data,observe_abute)                      # 观察点属性表
+    observe_abute_table(rain_data,observe_abute)                      # 观察点属性表
     region_rain = region_rain(rain_data, observe_abute)         # 按地区区分降雨
     
