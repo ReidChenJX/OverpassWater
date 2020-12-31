@@ -36,19 +36,23 @@ overpass_sql = "SELECT " \
 	"PM.N_DRAI_PUMP_TYPE_FEAT,"\
 	"PM.S_PUMPS_TYPE,"\
 	"PM.N_PUMPS_NUM, "\
-	"PM.N_PUMPS_FLOW "\
+	"PM.N_PUMPS_FLOW, "\
+	"DA.S_STID, "\
+	"DA.S_ZONE_ID "\
 	"FROM " \
 	"T_JISHUI  JI " \
-	"LEFT JOIN V_OVERPUMP  PM ON JI.S_XTBM = PM.S_XTBM"
+	"LEFT JOIN V_OVERPUMP  PM ON JI.S_XTBM = PM.S_XTBM "\
+	"LEFT JOIN T_DRAINPUMP_ADD  DA ON JI.S_XTBM = DA.S_XTBM"\
+	
 
 
 conn = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
 data = pd.read_sql(overpass_sql, con=conn)
 
-data.to_csv('./data/PumpData.csv', index=False, encoding='gbk')
+data.to_csv('./data/SnoPump.csv', index=False, encoding='gbk')
 conn.close()
 
-
+'''
 pump_sql = "SELECT S_STID,S_BJBH,S_BJTYPE,S_PUMPTYPE,S_KTBZT,T_KBTIME,T_TBTIME,N_KBSW,N_TBSW " \
 		   "FROM T_KTBMX_HIS WHERE T_KBTIME >= TO_DATE( '2020-06-01', 'yyyy-MM-dd' ) " \
 		   "AND T_KBTIME < TO_DATE( '2020-11-01', 'yyyy-MM-dd' )"
@@ -58,3 +62,4 @@ data = pd.read_sql(pump_sql, con=conn)
 
 data.to_csv('./data/PumpHis.csv', index=False, encoding='gbk')
 conn.close()
+'''
