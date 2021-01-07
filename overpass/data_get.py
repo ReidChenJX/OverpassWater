@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 # @time     : 2020/12/29
 # @Author   : ReidChen
+# document  : Get From Database.
 
 import numpy as np
 import pandas as pd
@@ -61,7 +62,7 @@ def ETforST(time):
 
 def overpass_get():
     # 下立交数据多时段批次获取
-    conn_overpass = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    conn_overpass = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
     start_time = '2020-06-01'  # 六月份开始，后面五个月
     log = 0  # 分批次,0代表第一次，后续增加为1
     for i in range(9):
@@ -76,7 +77,7 @@ def overpass_get():
 
 def rain_get():
     # 降雨数据多时段批次获取
-    conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
     start_time = '2020-06-01'  # 六月份开始，后面五个月
     log = 0  # 分批次,0代表第一次，后续增加为1
     for i in range(9):
@@ -90,10 +91,53 @@ def rain_get():
     conn_rain.close()
 
 
+def pump_data():
+    overpass_sql = "SELECT " \
+                   "JI.S_NO, " \
+                   "JI.S_ADDR, " \
+                   "JI.S_PSXT, " \
+                   "JI.S_DIRECTTO, " \
+                   "JI.S_JSGGJ," \
+                   "JI.S_JSGYX," \
+                   "JI.S_CSGGJ," \
+                   "JI.S_CSGYX," \
+                   "JI.S_SBTS," \
+                   "JI.S_SBLL," \
+                   "JI.S_XTBM," \
+                   "JI.S_STATIONID," \
+                   "PM.S_DRAI_PUMP_NAME," \
+                   "PM.S_DRAI_PUMP_ADD," \
+                   "PM.N_DRAI_PUMP_FLOW_FACT_Y," \
+                   "PM.N_DRAI_PUMP_FLOW_FACT_W," \
+                   "PM.N_DRAI_PUMP_POW_SUM_Y," \
+                   "PM.N_DRAI_PUMP_POW_SUM_W," \
+                   "PM.N_DISTRICT," \
+                   "PM.N_DRAI_PUMP_TYPE," \
+                   "PM.N_DRAI_PUMP_TYPE_FEAT," \
+                   "PM.S_PUMPS_TYPE," \
+                   "PM.N_PUMPS_NUM, " \
+                   "PM.N_PUMPS_FLOW, " \
+                   "DA.S_STID, " \
+                   "DA.S_ZONE_ID " \
+                   "FROM " \
+                   "T_JISHUI  JI " \
+                   "LEFT JOIN V_OVERPUMP  PM ON JI.S_XTBM = PM.S_XTBM " \
+                   "LEFT JOIN T_DRAINPUMP_ADD  DA ON JI.S_XTBM = DA.S_XTBM"
+
+    conn = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    data = pd.read_sql(overpass_sql, con=conn)
+    data.to_csv('../data/data/SnoPump.csv', index=False, encoding='gbk')
+    conn.close()
+
 if __name__ == '__main__':
     
     p1 = Process(target=overpass_get)
     p2 = Process(target=rain_get)
     p1.start()
     p2.start()
+    pump_data()
+    
+    
+    
+
     
