@@ -51,13 +51,11 @@ class ModelData:
         rain_time = original_rain_data[original_rain_data.S_STATIONID == self.abute.S_STATIONID].sort_values('D_TIME')
         rain_tmp = rain_time[self.time <= rain_time.D_TIME]
         rain_data = rain_tmp[rain_tmp.D_TIME <= self.end].copy(deep=True)
-        rain_data.reset_index(inplace=True)
         del original_rain_data
         
         pump_time = original_pump_data[original_pump_data.S_STID == self.abute.S_STID].sort_values('T_KBTIME')
         pump_tmp = pump_time[self.time <= pump_time.T_KBTIME]
         pump_data = pump_tmp[pump_tmp.T_KBTIME <= self.end].copy(deep=True)
-        pump_data.reset_index(inplace=True)
         del original_pump_data
         
         return flood_data, rain_data, pump_data
@@ -111,14 +109,23 @@ class ModelData:
             return pump_ZT, pump_NUM, pump_KBBH
         
         for one_flood in transform.itertuples():
-            transform.loc[one_flood.Index, 'N_RAINVALUE'] = get_rain(one_flood)
-            transform.loc[one_flood.Index, ['KBZT', 'KBNUM', 'KBBH']] = get_pump(one_flood)
+            try:
+                transform.loc[one_flood.Index, 'N_RAINVALUE'] = get_rain(one_flood)
+                transform.loc[one_flood.Index, ['KBZT', 'KBNUM', 'KBBH']] = get_pump(one_flood)
+            except:
+                print('Mistake issues:')
+                print(get_rain(one_flood))
+                print(get_pump(one_flood))
             
+        # 降雨监测数据，如果小于0为异常值，清除为0
+        transform['N_RAINVALUE'] = transform['N_RAINVALUE'].apply(lambda x: x if x>=0 else 0)
         
+        # 积水数据中，
         self.data = transform
         self.size = transform.shape
 
 
-s_no = '2015060020'
-model_data = ModelData(s_no, start_time='2020-07-01 09:00:00', end_time='2020-09-01 09:00:00')
+s_no = '2015060043'
+model_data = ModelData(s_no, start_time='2020-06-01 00:00:00', end_time='2020-10-31 00:00:00')
 model_data.transform()
+model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)

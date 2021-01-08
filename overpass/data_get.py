@@ -32,67 +32,104 @@ def overpassData(start_time, end_time, log, conn):
     
     data = pd.read_sql(overpass_sql, con=conn)
     if log == 0:
-        data.to_csv('../data/data/mouth8-9Overpass.csv',index=False, encoding='gbk')
+        data.to_csv('../data/data/2020overpass.csv',index=False, encoding='gbk')
     else:
-        data.to_csv('../data/data/mouth8-9Overpass.csv', mode='a', header=False, index=False, encoding='gbk')
+        data.to_csv('../data/data/2020overpass.csv', mode='a', header=False, index=False, encoding='gbk')
 
 def rainData(start_time, end_time, log, conn):
     start_time = start_time
     end_time = end_time
 
-    rain_sql = "SELECT S_YULIANG_1HOUR.S_STATIONID, S_YULIANG_1HOUR.D_TIME, " \
-                "S_YULIANG_1HOUR.N_RAINVALUE, S_YULIANG_1HOUR.S_STATIONNAME, " \
+    rain_sql = "SELECT S_YULIANG_MIN_HIS.S_STATIONID, S_YULIANG_MIN_HIS.D_TIME, " \
+                "S_YULIANG_MIN_HIS.N_RAINVALUE, S_YULIANG_MIN_HIS.S_STATIONNAME, " \
                 "T_DRAIN_STATION.S_DIST, T_DRAIN_STATION.S_XIANGZHEN " \
-                "FROM S_YULIANG_1HOUR LEFT JOIN T_DRAIN_STATION ON " \
-                "S_YULIANG_1HOUR.S_STATIONID = T_DRAIN_STATION.S_STATIONID " \
+                "FROM S_YULIANG_MIN_HIS LEFT JOIN T_DRAIN_STATION ON " \
+                "S_YULIANG_MIN_HIS.S_STATIONID = T_DRAIN_STATION.S_STATIONID " \
                 "WHERE D_TIME >= TO_DATE('{start_time}', 'yyyy-MM-dd') AND D_TIME < TO_DATE('{end_time}', 'yyyy-MM-dd') ".format(
             start_time=start_time, end_time=end_time)
 
     rain_data = pd.read_sql(rain_sql, con=conn)
     if log == 0:
-        rain_data.to_csv('../data/data/mouth8-9rain_data.csv', index=False, encoding='gbk')
+        rain_data.to_csv('../data/data/2020rain_data.csv', index=False, encoding='gbk')
     else:
-        rain_data.to_csv('../data/data/mouth8-9rain_data.csv', mode='a', header=False, index=False, encoding='gbk')
+        rain_data.to_csv('../data/data/2020rain_data.csv', mode='a', header=False, index=False, encoding='gbk')
+
+def pump_his(start_time, end_time, log, conn):
+    start_time = start_time
+    end_time = end_time
+    pump_his_sql = "SELECT " \
+                   "S_STID, " \
+                   "S_BJBH, " \
+                   "S_BJTYPE, " \
+                   "S_PUMPTYPE, " \
+                   "S_KTBZT," \
+                   "T_KBTIME," \
+                   "T_TBTIME " \
+                   "N_KBSW," \
+                   "N_TBSW " \
+                   "FROM " \
+                   "T_KTBMX_HIS "\
+                   "WHERE T_KBTIME >= TO_DATE('{start_time}', 'yyyy-MM-dd') AND T_KBTIME < TO_DATE('{end_time}', 'yyyy-MM-dd') ".format(
+            start_time=start_time, end_time=end_time)
+    pump_his = pd.read_sql(pump_his_sql, con=conn)
+    if log == 0:
+        pump_his.to_csv('../data/data/2020pump_his.csv', index=False, encoding='gbk')
+    else:
+        pump_his.to_csv('../data/data/2020pump_his.csv', index=False, encoding='gbk', mode='a', header=False)
 
 def ETforST(time):
     start_time = datetime.strptime(time, '%Y-%m-%d')    # 转化为时间格式
-    end_time = start_time + relativedelta(days=+15)    # 时间推迟一个月
+    end_time = start_time + relativedelta(days=+15)    # 时序推迟，产生多段时间拼接
     end_time = datetime.strftime(end_time, '%Y-%m-%d')  # 转化为字符格式
     return  end_time
 
 def overpass_get():
     # 下立交数据多时段批次获取
-    conn_overpass = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
-    start_time = '2020-06-01'  # 六月份开始，后面五个月
+    conn_overpass = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    start_time = '2020-01-01'  # 2020年1月 开始到 2020年12月31号
     log = 0  # 分批次,0代表第一次，后续增加为1
-    for i in range(9):
+    for i in range(23):
         end_time = ETforST(start_time)
         overpassData(start_time, end_time, log, conn_overpass)
         log += 1
         start_time = end_time
-    # 最后一次获取当前时间到11月1号的数据
-    overpassData(start_time, '2020-11-01', log, conn_overpass)
+    # 最后一次获取当前时间到12月31号的数据
+    overpassData(start_time, '2020-12-31', log, conn_overpass)
     # 关闭连接
     conn_overpass.close()
 
 def rain_get():
     # 降雨数据多时段批次获取
-    conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
-    start_time = '2020-06-01'  # 六月份开始，后面五个月
+    conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    start_time = '2020-01-01'  # 2020年1月 开始到 2020年12月31号
     log = 0  # 分批次,0代表第一次，后续增加为1
-    for i in range(9):
+    for i in range(23):
         end_time = ETforST(start_time)
         rainData(start_time, end_time, log, conn_rain)
         log += 1
         start_time = end_time
-    # 最后一次获取当前时间到11月1号的数据
-    rainData(start_time, '2020-11-01', log, conn_rain)
+    # 最后一次获取当前时间到12月31号的数据
+    rainData(start_time, '2020-12-31', log, conn_rain)
     # 关闭连接
     conn_rain.close()
 
+def pump_get():
+    # 泵站数据阶段性获取
+    conn_pump = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
+    start_time = '2020-01-01'  # 2020年1月 开始到 2020年12月31号
+    log = 0  # 分批次,0代表第一次，后续增加为1
+    for i in range(23):
+        end_time = ETforST(start_time)
+        pump_his(start_time, end_time, log, conn_pump)
+        log += 1
+        start_time = end_time
+    # 最后一次获取当前时间到12月31号的数据
+    pump_his(start_time, '2020-12-31', log, conn_pump)
+    # 关闭连接
+    conn_pump.close()
 
-def pump_data():
-    overpass_sql = "SELECT " \
+def sno_pump_data():
+    pump_sql = "SELECT " \
                    "JI.S_NO, " \
                    "JI.S_ADDR, " \
                    "JI.S_PSXT, " \
@@ -125,7 +162,7 @@ def pump_data():
                    "LEFT JOIN T_DRAINPUMP_ADD  DA ON JI.S_XTBM = DA.S_XTBM"
 
     conn = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.203:1521/ORCL')
-    data = pd.read_sql(overpass_sql, con=conn)
+    data = pd.read_sql(pump_sql, con=conn)
     data.to_csv('../data/data/SnoPump.csv', index=False, encoding='gbk')
     conn.close()
 
@@ -133,11 +170,12 @@ if __name__ == '__main__':
     
     p1 = Process(target=overpass_get)
     p2 = Process(target=rain_get)
+    p3 = Process(target=pump_get)
     p1.start()
     p2.start()
-    pump_data()
-    
-    
+    p3.start()
+    # sno_pump_data()
+
     
 
     
