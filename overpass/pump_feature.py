@@ -88,7 +88,7 @@ def rain_flood_pump(rain_flood, oaData, pump_run_data):
 
 if __name__ == '__main__':
     # pump_run_data 泵站开停时间表。
-    pump_run_data = pd.read_csv('../data/data/PumpHis.csv', encoding='gbk')
+    pump_run_data = pd.read_csv('../data/data/2020pump_his.csv', encoding='gbk')
     pump_run_data['T_KBTIME'] = pd.to_datetime(pump_run_data['T_KBTIME'])
     pump_run_data['T_TBTIME'] = pd.to_datetime(pump_run_data['T_TBTIME'])
     # 泵站与积水点对应表，包含相关属性。

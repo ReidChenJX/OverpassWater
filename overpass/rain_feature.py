@@ -10,7 +10,7 @@ import sys
 sys.path.append('./')
 import OPTools
 
-'''数据表overpass8_9data，属性表overpass_abute'''
+'''数据表2020rain_data，属性表overpass_abute'''
 '''结果：降雨数据表 rain_data 降雨时间，持续时间，降雨量；观测站表 observe_abute 观测站属性与降雨总量，降雨时长'''
 
 '''根据S_STATIONID，推算降雨开始时间，结束时间，降雨量'''
@@ -29,14 +29,12 @@ def rain_data(observe_rain_data, observe_abute):
     
         # 依次读取监测数据，记录降雨开始时间，结束时间，降雨量
         log = 0             # 标志位，1代表正在下雨
-        duration = 0        # 降雨持续时间
         rain_fall = 0.0     # 总降雨量
-        rarank = 0            # 降雨等级
     
         for value in rain_value.itertuples(index=False):
             if value.N_RAINVALUE >= 0.2 and log == 0:       # 开始降雨
                 start_time = value.D_TIME
-                start_time += timedelta(hours=-1)           # 时间前移一小时
+                # start_time += timedelta(hours=-1)           # 时间前移一小时
                 rain_fall += value.N_RAINVALUE
                 log = 1
             elif value.N_RAINVALUE < 0.2 and log == 0:      # 未降雨
@@ -45,7 +43,7 @@ def rain_data(observe_rain_data, observe_abute):
                 rain_fall += value.N_RAINVALUE
             elif value.N_RAINVALUE < 0.2 and log == 1:      # 雨停
                 end_time = value.D_TIME
-                end_time += timedelta(hours=-1)  # 时间前移一小时
+                # end_time += timedelta(hours=-1)  # 时间前移一小时
                 duration = end_time - start_time
                 duration = duration.seconds / 3600
                 # 根据降雨时间与降雨量判断降雨级别：小雨，中雨，大雨，暴雨，大暴雨，特大暴雨
@@ -145,8 +143,8 @@ def region_rain(rain_data, observe_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/mouth8-9rain_data.csv'
-    observe_rain_data = pd.read_csv(path, encoding='gbk')
+    path = '../data/data/2020rain_data.csv'
+    observe_rain_data = pd.read_csv(path, encoding='gbk',low_memory=False)
     
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']

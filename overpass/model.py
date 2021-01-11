@@ -34,9 +34,9 @@ class ModelData:
     def _get_data(self):
         # 按照时间格式获取数据，包括积水监测，降雨监测，泵站运行数据
         overpass_abute = pd.read_csv('../data/data/overpass_abute.csv', encoding='gbk', index_col='S_NO')
-        original_overpass_data = pd.read_csv('../data/data/mouth8-9Overpass.csv', encoding='gbk', low_memory=False)
-        original_rain_data = pd.read_csv('../data/data/mouth8-9rain_data.csv', encoding='gbk', low_memory=False)
-        original_pump_data = pd.read_csv('../data/data/PumpHis.csv', encoding='gbk')
+        original_overpass_data = pd.read_csv('../data/data/2020overpass.csv', encoding='gbk', low_memory=False)
+        original_rain_data = pd.read_csv('../data/data/2020rain_data.csv', encoding='gbk', low_memory=False)
+        original_pump_data = pd.read_csv('../data/data/2020pump_his.csv', encoding='gbk')
         
         # 根据 S_NO 提取数据，设置self.abute
         self.abute = overpass_abute.loc[self.name].copy(deep=True)
@@ -126,6 +126,6 @@ class ModelData:
 
 
 s_no = '2015060043'
-model_data = ModelData(s_no, start_time='2020-06-01 00:00:00', end_time='2020-10-31 00:00:00')
+model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
 model_data.transform()
 model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)

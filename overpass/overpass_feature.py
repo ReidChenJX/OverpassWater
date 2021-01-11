@@ -5,13 +5,13 @@
 
 import pandas as pd
 import numpy as np
-import sys
-
-sys.path.append('./')
+import sys,os
+file_dir = os.path.split(os.path.realpath(__file__))[0]
+sys.path.append(file_dir)
 import OPTools
 
 """
-数据来源：overpass8_9data，为数据库获取表
+数据来源：2020overpass.csv，为数据库获取表
 程序返回：overpass_abute，包含各下立交点属性内容
 结果：异常积水点 overpass_neg，积水时间与深度 hydrops_data，积水属性与频次 overpass_table
 """
@@ -91,7 +91,7 @@ def hydrops_data(pos_index):
     
     for JSD_NO in pos_index:
         # 根据S_NO获取积水点的数据
-        JSD_value = overpass8_9data[overpass8_9data['S_NO'] == JSD_NO][['S_NO', 'T_SYSTIME', 'N_VALUE']]
+        JSD_value = overpass_data[overpass_data['S_NO'] == JSD_NO][['S_NO', 'T_SYSTIME', 'N_VALUE']]
         JSD_value.sort_values('T_SYSTIME', inplace=True)  # 按照时间排序
         
         # 依次读取监测数据，记录积水开始时间，结束时间，积水深度
@@ -178,21 +178,21 @@ def dict_overpass_table(overpass_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/mouth8-9Overpass.csv'
-    overpass8_9data = pd.read_csv(path, encoding='gbk', low_memory=False)
+    path = '../data/data/2020overpass.csv'
+    overpass_data = pd.read_csv(path, encoding='gbk', low_memory=False)
     
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_ADDR', 'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT', 'S_MAINTAIN_UNIT', 'S_STATIONNAME']
     for column in columns:
-        overpass8_9data[column].fillna(value='无', inplace=True)
+        overpass_data[column].fillna(value='无', inplace=True)
     # 时间格式转化
-    overpass8_9data['T_SYSTIME'] = pd.to_datetime(overpass8_9data['T_SYSTIME'])
+    overpass_data['T_SYSTIME'] = pd.to_datetime(overpass_data['T_SYSTIME'])
     
     # 减少内存使用
-    overpass8_9data = OPTools.otMenory(overpass8_9data)
+    overpass_data = OPTools.otMenory(overpass_data)
     
     # 维护S_NO与下立交属性关联
-    overpass_abute = overpass8_9data[['S_NO', 'S_HASMONITOR', 'N_VALUE', 'S_STATENAME', 'S_ADDR',
+    overpass_abute = overpass_data[['S_NO', 'S_HASMONITOR', 'N_VALUE', 'S_STATENAME', 'S_ADDR',
                                       'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT',
                                       'S_MAINTAIN_UNIT', 'S_STATIONID', 'S_STATIONNAME']].copy(deep=True)
     overpass_abute.drop_duplicates('S_NO', inplace=True)
