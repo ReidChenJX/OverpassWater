@@ -30,6 +30,7 @@ def rain_data(observe_rain_data, observe_abute):
         # 依次读取监测数据，记录降雨开始时间，结束时间，降雨量
         log = 0             # 标志位，1代表正在下雨
         rain_fall = 0.0     # 总降雨量
+        no_rain = 0
     
         for value in rain_value.itertuples(index=False):
             if value.N_RAINVALUE >= 0.2 and log == 0:       # 开始降雨
@@ -37,11 +38,18 @@ def rain_data(observe_rain_data, observe_abute):
                 # start_time += timedelta(hours=-1)           # 时间前移一小时
                 rain_fall += value.N_RAINVALUE
                 log = 1
+                no_rain = 0
             elif value.N_RAINVALUE < 0.2 and log == 0:      # 未降雨
+                no_rain += 1
                 continue
             elif value.N_RAINVALUE >= 0.2 and log == 1:     #正在降雨
                 rain_fall += value.N_RAINVALUE
+                no_rain = 0
             elif value.N_RAINVALUE < 0.2 and log == 1:      # 雨停
+                # 降雨时，若雨停，需再后验一步，确定是否为有误数据
+                if no_rain == 0:
+                    no_rain +=1
+                    continue
                 end_time = value.D_TIME
                 # end_time += timedelta(hours=-1)  # 时间前移一小时
                 duration = end_time - start_time

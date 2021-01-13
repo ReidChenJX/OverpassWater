@@ -177,6 +177,7 @@ def dict_overpass_table(overpass_abute):
     overpass_abute.to_csv('../data/data./overpass_abute.csv', encoding='gbk',)
 
 
+
 if __name__ == '__main__':
     path = '../data/data/2020overpass.csv'
     overpass_data = pd.read_csv(path, encoding='gbk', low_memory=False)

@@ -125,7 +125,7 @@ class ModelData:
         self.size = transform.shape
 
 
-s_no = '2015060043'
+s_no = 2015060043
 model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
 model_data.transform()
 model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)
