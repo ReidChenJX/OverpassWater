@@ -154,7 +154,7 @@ def region_rain(rain_data, observe_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/2020-6rain_data.csv'
+    path = '../data/data/2020rain_data.csv'
     observe_rain_data = pd.read_csv(path, encoding='gbk')
     
     # 对属性缺失值进行中文“无”的填充
