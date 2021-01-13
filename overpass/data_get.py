@@ -36,7 +36,6 @@ def overpassData(start_time, end_time, log, conn):
     else:
         data.to_csv('../data/data/2020overpass.csv', mode='a', header=False, index=False, encoding='gbk')
 
-
 def overpassData2(start_time, end_time, conn):
     # 根据时间获取下立交积水数据
     start_time = start_time

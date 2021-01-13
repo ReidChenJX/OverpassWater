@@ -34,14 +34,14 @@ def PumpDF(S_P_List, overpass_abute, pump_run_data):
     SPData = SPData.set_index('S_NO')
     
     for oa in oaData.itertuples(index=True):
-        if oa.Index not in SPData.index:
+        if str(oa.Index) not in SPData.index:
             continue
-        s_xtbm = SPData.loc[oa.Index, 'S_XTBM']  # 获取系统编码
+        s_xtbm = SPData.loc[str(oa.Index), 'S_XTBM']  # 获取系统编码
         oaData.loc[oa.Index, 'S_XTBM'] = s_xtbm
-        oaData.loc[oa.Index, 'S_PUMPS_TYPE'] = SPData.loc[oa.Index, 'S_PUMPS_TYPE']
-        oaData.loc[oa.Index, 'N_PUMPS_NUM'] = SPData.loc[oa.Index, 'N_PUMPS_NUM']
-        oaData.loc[oa.Index, 'N_PUMPS_FLOW'] = SPData.loc[oa.Index, 'N_PUMPS_FLOW']
-        s_stid = SPData.loc[oa.Index, 'S_STID']
+        oaData.loc[oa.Index, 'S_PUMPS_TYPE'] = SPData.loc[str(oa.Index), 'S_PUMPS_TYPE']
+        oaData.loc[oa.Index, 'N_PUMPS_NUM'] = SPData.loc[str(oa.Index), 'N_PUMPS_NUM']
+        oaData.loc[oa.Index, 'N_PUMPS_FLOW'] = SPData.loc[str(oa.Index), 'N_PUMPS_FLOW']
+        s_stid = SPData.loc[str(oa.Index), 'S_STID']
         oaData.loc[oa.Index, 'S_STID'] = s_stid
         
         # 统计每个泵的开泵时长
@@ -64,7 +64,7 @@ def rain_flood_pump(rain_flood, oaData, pump_run_data):
         # 初始化泵站开启结束时间
         pump_start, pump_end = np.nan, np.nan
         # 获取积水点的泵站运行ID
-        s_stid = oaData.loc[str(ra_fo.S_NO), 'S_STID']
+        s_stid = oaData.loc[ra_fo.S_NO, 'S_STID']
         # 获取该泵站的运行数据，并按照时间排序
         pump_run = pump_run_data[pump_run_data['S_STID'] == s_stid].sort_values('T_KBTIME')
         pump_run.reset_index(inplace=True)

@@ -179,8 +179,8 @@ def dict_overpass_table(overpass_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/2020overpass.csv'
-    overpass_data = pd.read_csv(path, encoding='gbk', low_memory=False)
+    path = '../data/data/2020-06overpass.csv'
+    overpass_data = pd.read_csv(path, encoding='gbk')
     
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_ADDR', 'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT', 'S_MAINTAIN_UNIT', 'S_STATIONNAME']

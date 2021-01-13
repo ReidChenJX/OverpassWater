@@ -30,7 +30,8 @@ def rain_data(observe_rain_data, observe_abute):
         # 依次读取监测数据，记录降雨开始时间，结束时间，降雨量
         log = 0             # 标志位，1代表正在下雨
         rain_fall = 0.0     # 总降雨量
-        no_rain = 0
+        rain_time = 0       # 降雨持续时间，只有大于1（10分钟）才为有效降雨
+        
     
         for value in rain_value.itertuples(index=False):
             if value.N_RAINVALUE >= 0.2 and log == 0:       # 开始降雨
@@ -38,41 +39,43 @@ def rain_data(observe_rain_data, observe_abute):
                 # start_time += timedelta(hours=-1)           # 时间前移一小时
                 rain_fall += value.N_RAINVALUE
                 log = 1
-                no_rain = 0
+                rain_time += 1
             elif value.N_RAINVALUE < 0.2 and log == 0:      # 未降雨
-                no_rain += 1
                 continue
             elif value.N_RAINVALUE >= 0.2 and log == 1:     #正在降雨
                 rain_fall += value.N_RAINVALUE
-                no_rain = 0
+                rain_time += 1
             elif value.N_RAINVALUE < 0.2 and log == 1:      # 雨停
-                # 降雨时，若雨停，需再后验一步，确定是否为有误数据
-                if no_rain == 0:
-                    no_rain +=1
+                # 雨停，只有rain_time>2为有效降雨
+                if rain_time == 1:
+                    rain_time = 0
+                    rain_fall = 0
+                    log = 0
                     continue
-                end_time = value.D_TIME
-                # end_time += timedelta(hours=-1)  # 时间前移一小时
-                duration = end_time - start_time
-                duration = duration.seconds / 3600
-                # 根据降雨时间与降雨量判断降雨级别：小雨，中雨，大雨，暴雨，大暴雨，特大暴雨
-                if (duration <= 12 and rain_fall <= 5) or (duration > 12 and rain_fall <= 10):
-                    rarank = 1
-                elif (duration <= 12 and rain_fall <= 15) or (duration > 12 and rain_fall <= 25):
-                    rarank = 2
-                elif (duration <= 12 and rain_fall <= 30) or (duration > 12 and rain_fall <= 50):
-                    rarank = 3
-                elif rain_fall <= 100:
-                    rarank = 4
-                elif rain_fall <= 250:
-                    rarank = 5
-                else: rarank = 6
-                if value.S_DIST == '<Null>':
-                    s_dist = '无'
-                else: s_dist = value.S_DIST
-                rain_data.loc[rain_data_index] = [value.S_STATIONID, start_time, end_time,
-                                                  duration, rain_fall, rarank, s_dist]
-                log, rain_fall, rarank= 0, 0, 0
-                rain_data_index += 1
+                else:
+                    end_time = value.D_TIME
+                    # end_time += timedelta(hours=-1)  # 时间前移一小时
+                    duration = end_time - start_time
+                    duration = duration.seconds / 60    # 持续多少分钟
+                    # 根据降雨时间与降雨量判断降雨级别：小雨，中雨，大雨，暴雨，大暴雨，特大暴雨
+                    if (duration <= 12 and rain_fall <= 5) or (duration > 12 and rain_fall <= 10):
+                        rarank = 1
+                    elif (duration <= 12 and rain_fall <= 15) or (duration > 12 and rain_fall <= 25):
+                        rarank = 2
+                    elif (duration <= 12 and rain_fall <= 30) or (duration > 12 and rain_fall <= 50):
+                        rarank = 3
+                    elif rain_fall <= 100:
+                        rarank = 4
+                    elif rain_fall <= 250:
+                        rarank = 5
+                    else: rarank = 6
+                    if value.S_DIST == '<Null>':
+                        s_dist = '无'
+                    else: s_dist = value.S_DIST
+                    rain_data.loc[rain_data_index] = [value.S_STATIONID, start_time, end_time,
+                                                      duration, rain_fall, rarank, s_dist]
+                    log, rain_fall, rarank, rain_time= 0, 0, 0, 0
+                    rain_data_index += 1
 
     rain_data.to_csv('../data/data/rain_data.csv', encoding='gbk', index=False)
     return rain_data
@@ -151,8 +154,8 @@ def region_rain(rain_data, observe_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/2020rain_data.csv'
-    observe_rain_data = pd.read_csv(path, encoding='gbk',low_memory=False)
+    path = '../data/data/2020-6rain_data.csv'
+    observe_rain_data = pd.read_csv(path, encoding='gbk')
     
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']
