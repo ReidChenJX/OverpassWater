@@ -174,7 +174,7 @@ def dict_overpass_table(overpass_abute):
     
     # 删除数值列。
     overpass_abute.drop(columns=['N_VALUE'], inplace=True)
-    overpass_abute.to_csv('../data/data./overpass_abute.csv', encoding='gbk',)
+    overpass_abute.to_csv('../data/data/overpass_abute.csv', encoding='gbk',)
 
 
 
