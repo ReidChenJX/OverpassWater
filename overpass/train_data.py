@@ -11,7 +11,7 @@ import numpy as np
 
 
 class ModelData:
-    def __init__(self, name, start_time, end_time, data_path=None):
+    def __init__(self, name, start_time, end_time, data_path=None, abute_path=None):
         """
         用于提供可进行建模的数据
         param  name: 积水点的S_NO
@@ -22,8 +22,10 @@ class ModelData:
         
         if data_path is None:
             self.data_path = '../data/model_data/{name}.csv'.format(name=name)
+            self.abute_path = '../data/model_data/{name}_abute.csv'.format(name=name)
         else:
             self.data_path = data_path
+            self.abute_path = abute_path
         
         self.time = start_time
         self.end = end_time
@@ -220,10 +222,13 @@ class ModelData:
 
 def main():
     
-    s_no = 2015060020
-    model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
-    model_data.transform()
-    model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)
+    s_no_list = [2015060043, 2015060122, 2016050029, 2016050094, 2015060105, 2015060128]
+    for s_no in s_no_list:
+        model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
+        model_data.transform()
+        model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)
+        model_data.abute.to_csv(model_data.data_path, encoding='gbk', index=False)
+        
 
 
 if __name__ == '__main__':
