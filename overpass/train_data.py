@@ -3,11 +3,11 @@
 # @time     : 2021/1/5 16:57
 # @Author   : ReidChen
 
-import pandas as pd
 import datetime
-import numpy as np
 
-'''数据类'''
+import pandas as pd
+
+'''数据类:从基础文件中梳理整理出可用于分析的数据'''
 
 
 class ModelData:
@@ -94,7 +94,6 @@ class ModelData:
         pump_data['pump_inter'] = pump_data['T_KBTIME'] - pump_data['T_TBTIME']
         pump_data['pump_inter'] = pump_data['pump_inter'].apply(lambda x: x.seconds / 60)
         
-        
         rain_time['START_TIME'] = pd.to_datetime(rain_time['START_TIME'])
         rain_time['END_TIME'] = pd.to_datetime(rain_time['END_TIME'])
         
@@ -179,8 +178,6 @@ class ModelData:
             pump_run_in_1h = pump_run_in_1h[pump_run_in_1h.T_TBTIME >= time_1]
             pump_dur_1 = sum(pump_run_in_1h['pump_inter'])
             
-            
-            
             if len(pump_run_in_time) == 0:  # 判断此时有多少泵站运行数据，若为0则无泵
                 pump_zt, pump_num, pump_kbbh = 0, 0, 0
             elif len(pump_run_in_time) == 1:  # 单泵运行
@@ -206,11 +203,13 @@ class ModelData:
             # 泵站数据录入
             transform.loc[one_flood.Index, ['pump_dur_12', 'pump_dur_6', 'pump_dur_3', 'pump_dur_1',
                                             'kbzt', 'kbnum', 'kbbh']] = get_pump(one_flood)
-            if one_flood.Index == 0: val_last = 0
-            else: val_last = transform.loc[one_flood.Index-1, 'N_VALUE']
+            if one_flood.Index == 0:
+                val_last = 0
+            else:
+                val_last = transform.loc[one_flood.Index - 1, 'N_VALUE']
             # 前一下立交积水点的监测值数据
-            transform.loc[one_flood.Index,'val_last'] = val_last
-                
+            transform.loc[one_flood.Index, 'val_last'] = val_last
+            
             # except:
             #     print('Mistake issues:')
             #     print(get_rain(one_flood))
@@ -220,15 +219,14 @@ class ModelData:
         self.data = transform
         self.size = transform.shape
 
+
 def main():
-    
     s_no_list = [2015060043, 2015060122, 2016050029, 2016050094, 2015060105, 2015060128]
     for s_no in s_no_list:
         model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
         model_data.transform()
         model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)
-        model_data.abute.to_csv(model_data.data_path, encoding='gbk', index=False)
-        
+        model_data.abute.to_csv(model_data.abute_path, encoding='gbk', index=False)
 
 
 if __name__ == '__main__':
