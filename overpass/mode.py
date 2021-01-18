@@ -3,6 +3,7 @@
 # @time     : 2021/1/14 17:44
 # @Author   : ReidChen
 # Document  ：生成模型训练测试数据
+import os
 
 import numpy as np
 import pandas as pd
@@ -11,6 +12,8 @@ from tensorflow import keras
 from tensorflow.keras import layers
 from keras.models import Sequential
 from keras.layers import Dense, Activation,Bidirectional,LSTM,TimeDistributed
+from keras.callbacks import ModelCheckpoint
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 # 加载数据，对单个下立交积水点进行模型预测
 
@@ -42,7 +45,7 @@ class TrainData:
         org_data.sort_index(inplace=True)
         
         train_y = org_data['N_VALUE']
-        train_x = org_data.drop(columns=['S_NO', 'val_last', 'N_VALUE'])
+        train_x = org_data.drop(columns=['S_NO', 'N_VALUE'])
         
         return train_x, train_y
     
@@ -69,7 +72,7 @@ class TrainData:
 
 
 s_no = 2015060043
-in_put, out_put, features = 30, 5, 15
+in_put, out_put, features = 30, 5, 16
 in_out_fea = [in_put, out_put, features]
 train_data = TrainData(s_no=s_no, IOF=in_out_fea)
 train_data.transform()
@@ -77,13 +80,29 @@ train_data.transform()
 train_x = train_data.X
 train_y = train_data.y
 
-model = keras.Sequential()
-model.add(Bidirectional(LSTM(3,activation='relu'), input_shape=(in_put, features)))
-model.add(Dense(out_put))
+def create_model():
+    model = keras.Sequential()
+    model.add(Bidirectional(LSTM(3, activation='relu'), input_shape=(in_put, features)))
+    model.add(Dense(out_put))
+    
+    model.compile(optimizer='adam', loss='mse')
+    return model
+    
+model = create_model()
 
-model.compile(optimizer='adam',loss='mse')
-model.fit(train_x, train_y, epochs=1000, shuffle=False, )
 
-predict_y = model.predict(train_x)
+
+# 为模型提供保存路径
+filepath="../model/LSTM.ckpt"
+callback = ModelCheckpoint(filepath=filepath, monitor='val_loss',
+                           verbose=1, save_best_only=True, save_weights_only=True,
+                           model='min')
+model.fit(train_x, train_y, epochs=1500, shuffle=False, callbacks=[callback])
+
+# 加载最佳模型
+pre_model = create_model()
+pre_model.load_weights(filepath=filepath)
+
+predict_y = pre_model.predict(train_x)
 predict_y = pd.DataFrame(predict_y)
-predict_y.to_csv('../data/model_data/pre_{s_no}.csv'.format(s_no=s_no),encoding='gbk')
+predict_y.to_csv('../data/model_data/pre_{s_no}.csv'.format(s_no=s_no),encoding='gbk',index=False)
