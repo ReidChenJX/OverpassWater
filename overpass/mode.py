@@ -7,13 +7,15 @@ import os
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from keras.models import Sequential
-from keras.layers import Dense, Activation,Bidirectional,LSTM,TimeDistributed
+from keras.layers import Dense, Activation, Bidirectional, LSTM, TimeDistributed
 from keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import ModelCheckpoint
+from sklearn.preprocessing import StandardScaler
 
 # 加载数据，对单个下立交积水点进行模型预测
 
@@ -71,52 +73,83 @@ class TrainData:
         self.X, self.y = X, y
 
 
-# 训练数据
-s_no = '2015060043'
-in_put, out_put, features = 30, 5, 16
-in_out_fea = [in_put, out_put, features]
-train_data = TrainData(s_no=s_no, IOF=in_out_fea)
-train_data.transform()
-# LSTM 模型的训练数据
-train_x = train_data.X
-train_y = train_data.y
+def draw_data(in_put, out_put, features):
+    
+    in_out_fea = [in_put, out_put, features]
+    # 训练数据
+    s_no = '2015060043'
+    train_data = TrainData(s_no=s_no, IOF=in_out_fea)
+    train_data.transform()
+    # LSTM 模型的训练数据
+    train_x = train_data.X
+    train_y = train_data.y
+    
+    # 测试数据
+    s_no = '2015060043_test'
+    test_data = TrainData(s_no=s_no, IOF=in_out_fea)
+    test_data.transform()
+    test_x = test_data.X
+    test_y = test_data.y
+    
+    return train_x, train_y, test_x, test_y, test_data.s_no
 
 
-# 测试数据
-s_no = '2015060043_test'
-test_data = TrainData(s_no=s_no, IOF=in_out_fea)
-test_data.transform()
-test_x = test_data.X
-test_y = test_data.y
-
-
-
-
-
-def create_model():
+def create_model(in_put, out_put, features):
+    
     model = keras.Sequential()
     model.add(Bidirectional(LSTM(3, activation='relu'), input_shape=(in_put, features)))
     model.add(Dense(out_put))
     
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
-    
-model = create_model()
 
 
+# 模型与数据均是输入50，输出5，特征数为16 的 seq_to_seq的预测模型
+in_put, out_put, features = 30, 5, 16
+train_x, train_y, test_x, test_y, s_no = draw_data(in_put, out_put, features)
 
+'''
+# 数据处理类，尝试标准化处理
+train_len = len(train_x)
+tra_test = pd.concat([train_x,test_x])
+scaler = StandardScaler()
+
+'''
+
+
+# 创建训练模型
+model = create_model(in_put, out_put, features)
 # 为模型提供保存路径
-filepath="../model/LSTM.ckpt"
+filepath = "../model/LSTM.ckpt"
 callback = ModelCheckpoint(filepath=filepath, monitor='val_loss',
                            verbose=1, save_best_only=True, save_weights_only=True,
                            model='min')
-model.fit(train_x, train_y, epochs=1500, shuffle=False,
+history = model.fit(train_x, train_y, epochs=1, shuffle=False,
           validation_data=(test_x, test_y), callbacks=[callback])
 
+
+
+
+# # 绘制
+# plt.figure(figsize=(15,15),dpi=200)
+# plt.plot(history.history['loss'])
+# plt.plot(history.history['val_loss'])
+# plt.title('model train vs validation loss')
+# plt.ylabel('loss')
+# plt.xlabel('epoch')
+# plt.legend(['train','validation'], loc='upper right')
+# plt.show()
+
+
+
+
+
 # 加载最佳模型
-pre_model = create_model()
+filepath = "../model/LSTM.ckpt"
+pre_model = create_model(in_put, out_put, features)
 pre_model.load_weights(filepath=filepath)
 
+# 选择最好的模型进程数据预测
 predict_y = pre_model.predict(train_x)
 predict_y = pd.DataFrame(predict_y)
-predict_y.to_csv('../data/model_data/pre_{s_no}.csv'.format(s_no=s_no),encoding='gbk',index=False)
+predict_y.to_csv('../data/model_data/pre_{s_no}.csv'.format(s_no=s_no), encoding='gbk', index=False)
