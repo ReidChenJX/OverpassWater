@@ -71,7 +71,8 @@ class TrainData:
         self.X, self.y = X, y
 
 
-s_no = 2015060043
+# 训练数据
+s_no = '2015060043'
 in_put, out_put, features = 30, 5, 16
 in_out_fea = [in_put, out_put, features]
 train_data = TrainData(s_no=s_no, IOF=in_out_fea)
@@ -80,12 +81,24 @@ train_data.transform()
 train_x = train_data.X
 train_y = train_data.y
 
+
+# 测试数据
+s_no = '2015060043_test'
+test_data = TrainData(s_no=s_no, IOF=in_out_fea)
+test_data.transform()
+test_x = test_data.X
+test_y = test_data.y
+
+
+
+
+
 def create_model():
     model = keras.Sequential()
     model.add(Bidirectional(LSTM(3, activation='relu'), input_shape=(in_put, features)))
     model.add(Dense(out_put))
     
-    model.compile(optimizer='adam', loss='mse')
+    model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
     
 model = create_model()
@@ -97,7 +110,8 @@ filepath="../model/LSTM.ckpt"
 callback = ModelCheckpoint(filepath=filepath, monitor='val_loss',
                            verbose=1, save_best_only=True, save_weights_only=True,
                            model='min')
-model.fit(train_x, train_y, epochs=1500, shuffle=False, callbacks=[callback])
+model.fit(train_x, train_y, epochs=1500, shuffle=False,
+          validation_data=(test_x, test_y), callbacks=[callback])
 
 # 加载最佳模型
 pre_model = create_model()

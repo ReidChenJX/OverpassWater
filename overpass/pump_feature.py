@@ -73,12 +73,16 @@ def rain_flood_pump(rain_flood, oaData, pump_run_data):
         else:
             # 比较得到开泵时间
             pump_run_stime = pump_run.T_KBTIME
-            pump_start = max(pump_run_stime[pump_run_stime <= ra_fo.START_TIME])
-            pump_ksw = pump_run[pump_run['T_KBTIME'] == pump_start]['N_KBSW'].values
+            pump_fir_stime= pump_run_stime[pump_run_stime <= ra_fo.START_TIME]
+            if len(pump_fir_stime) == 0: continue
+            pump_start = max(pump_fir_stime)
+            pump_ksw = pump_run[pump_run['T_KBTIME'] == pump_start]['N_KBSW'].drop_duplicates().values
+            
             # 停泵时间
             pump_run_end = pump_run.T_TBTIME
             pump_end = min(pump_run_end[pump_run_end >= ra_fo.END_TIME])
             pump_tsw = pump_run[pump_run['T_TBTIME'] == pump_end]['N_TBSW'].values
+            
         rain_flood.loc[ra_fo.Index, 'T_KBTIME'] = pump_start
         rain_flood.loc[ra_fo.Index, 'T_TBTIME'] = pump_end
         rain_flood.loc[ra_fo.Index, 'N_KBSW'] = pump_ksw
@@ -88,7 +92,7 @@ def rain_flood_pump(rain_flood, oaData, pump_run_data):
 
 if __name__ == '__main__':
     # pump_run_data 泵站开停时间表。
-    pump_run_data = pd.read_csv('../data/data/2020pump_his.csv', encoding='gbk')
+    pump_run_data = pd.read_csv('../data/data/pump_his_test.csv', encoding='gbk')
     pump_run_data['T_KBTIME'] = pd.to_datetime(pump_run_data['T_KBTIME'])
     pump_run_data['T_TBTIME'] = pd.to_datetime(pump_run_data['T_TBTIME'])
     # 泵站与积水点对应表，包含相关属性。

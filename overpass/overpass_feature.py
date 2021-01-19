@@ -179,10 +179,11 @@ def dict_overpass_table(overpass_abute):
 
 
 if __name__ == '__main__':
-    path = '../data/data/2020overpass.csv'
+    path = '../data/data/overpass_test.csv'
     overpass_data = pd.read_csv(path, encoding='gbk')
     
     # 对属性缺失值进行中文“无”的填充
+    overpass_data['S_STATENAME'] = overpass_data['S_STATENAME'].apply(lambda x:'正常' if x==1 else '不正常')
     columns = ['S_ADDR', 'S_BUILDDATE', 'S_PROUNIT', 'S_MANAGE_UNIT', 'S_MAINTAIN_UNIT', 'S_STATIONNAME']
     for column in columns:
         overpass_data[column].fillna(value='无', inplace=True)

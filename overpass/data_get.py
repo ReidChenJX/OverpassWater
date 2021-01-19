@@ -248,7 +248,7 @@ def org_test_data():
                 rain_data.to_csv('../data/datatest/rain_data_test.csv', mode='a',
                                  header=False, index=False, encoding='gbk')
 
-        conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.201:1521/yfzx')
+        conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
         start_time = start_time
         log = 0  # 分批次,0代表第一次，后续增加为1
         for i in range(23):
@@ -283,7 +283,7 @@ def org_test_data():
                                 encoding='gbk', mode='a', header=False)
 
         # 泵站数据阶段性获取
-        conn_pump = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.1.201:1521/yfzx')
+        conn_pump = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
         start_time = start_time
         log = 0  # 分批次,0代表第一次，后续增加为1
         for i in range(23):

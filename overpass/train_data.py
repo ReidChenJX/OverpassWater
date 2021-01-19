@@ -37,9 +37,9 @@ class ModelData:
     def _get_data(self):
         # 按照时间格式获取数据，包括积水监测，降雨监测，泵站运行数据
         overpass_abute = pd.read_csv('../data/data/overpass_abute.csv', encoding='gbk', index_col='S_NO')
-        original_overpass_data = pd.read_csv('../data/data/2020overpass.csv', encoding='gbk')
-        original_rain_data = pd.read_csv('../data/data/2020rain_data.csv', encoding='gbk')
-        original_pump_data = pd.read_csv('../data/data/2020pump_his.csv', encoding='gbk')
+        original_overpass_data = pd.read_csv('../data/data/overpass_test.csv', encoding='gbk')
+        original_rain_data = pd.read_csv('../data/data/rain_data_test.csv', encoding='gbk')
+        original_pump_data = pd.read_csv('../data/data/pump_his_test.csv', encoding='gbk')
         rain_time_val = pd.read_csv('../data/data/rain_data.csv', encoding='gbk')
         
         # 根据 S_NO 提取数据，设置self.abute
@@ -107,13 +107,14 @@ class ModelData:
             
             # 前向寻找到最接近的的降雨记录
             rain_run_intime = rain_data[rain_data.D_TIME <= time]
-            if len(rain_run_intime) == 0: return [0, 0, 0, 0, 0, 0]
+            if len(rain_run_intime) <= 1: return [0, 0, 0, 0, 0, 0]
             rain_tail = rain_run_intime.iloc[-1]
+            rain_tail2 = rain_run_intime.iloc[-2]
             
             # 当前降雨量
             rain_now = rain_tail.N_RAINVALUE
             # 前一次记录降雨量
-            rain_last = rain_run_intime.loc[rain_tail.name - 1, 'N_RAINVALUE']
+            rain_last = rain_tail2.N_RAINVALUE
             # 前一小时降雨量合计
             rain_run_1 = rain_run_intime[rain_run_intime.D_TIME >= time_1]
             rain_1h = sum(rain_run_1.N_RAINVALUE)
@@ -223,7 +224,7 @@ class ModelData:
 def main():
     s_no_list = [2015060043, 2015060122, 2016050029, 2016050094, 2015060105, 2015060128]
     for s_no in s_no_list:
-        model_data = ModelData(s_no, start_time='2020-01-01 00:00:00', end_time='2020-12-31 00:00:00')
+        model_data = ModelData(s_no, start_time='2019-07-05 00:00:00', end_time='2020-12-31 23:59:59')
         model_data.transform()
         model_data.data.to_csv(model_data.data_path, encoding='gbk', index=False)
         model_data.abute.to_csv(model_data.abute_path, encoding='gbk', index=False)
