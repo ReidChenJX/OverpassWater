@@ -3,8 +3,8 @@
 # @time     : 2021/1/14 17:44
 # @Author   : ReidChen
 # Document  ：生成模型训练测试数据
-import os
 
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Bidirectional, LSTM, TimeDistributed
+from keras.layers import Dense, Activation, Bidirectional, LSTM, TimeDistributed, RepeatVector
 from keras.callbacks import ModelCheckpoint
 from tensorflow.keras.callbacks import ModelCheckpoint
 from sklearn.preprocessing import StandardScaler
@@ -77,29 +77,43 @@ def draw_data(in_put, out_put, features):
     
     in_out_fea = [in_put, out_put, features]
     # 训练数据
-    s_no = '2015060043'
-    train_data = TrainData(s_no=s_no, IOF=in_out_fea)
-    train_data.transform()
+    s_no_train = '2015060043'
+    train_data = TrainData(s_no=s_no_train, IOF=in_out_fea)
+
+    # 测试数据
+    s_no_test = '2015060043_test'
+    test_data = TrainData(s_no=s_no_test, IOF=in_out_fea)
+    
+    
     # LSTM 模型的训练数据
+    train_data.transform()
     train_x = train_data.X
     train_y = train_data.y
-    
-    # 测试数据
-    s_no = '2015060043_test'
-    test_data = TrainData(s_no=s_no, IOF=in_out_fea)
+    # LSTM 模型测试数据
     test_data.transform()
     test_x = test_data.X
     test_y = test_data.y
     
-    return train_x, train_y, test_x, test_y, test_data.s_no
+    return train_x, train_y, test_x, test_y, train_data.s_no
 
+# 双向LSTM模型
+# def create_model(in_put, out_put, features):
+#
+#     model = keras.Sequential()
+#     model.add(Bidirectional(LSTM(4, activation='relu'), input_shape=(in_put, features)))
+#     model.add(Dense(out_put))
+#
+#     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
+#     return model
 
+# 堆叠LSTM模型
 def create_model(in_put, out_put, features):
-    
     model = keras.Sequential()
-    model.add(Bidirectional(LSTM(3, activation='relu'), input_shape=(in_put, features)))
+    model.add(LSTM(5, activation='tanh', return_sequences=True, input_shape=(in_put, features)))
+    model.add(LSTM(5, activation='tanh', return_sequences=True,dropout=0.2,recurrent_dropout=0.2))
+    model.add(LSTM(3, activation='tanh',dropout=0.2,recurrent_dropout=0.2))
     model.add(Dense(out_put))
-    
+
     model.compile(optimizer='adam', loss='mse', metrics=['mae'])
     return model
 
@@ -111,11 +125,15 @@ train_x, train_y, test_x, test_y, s_no = draw_data(in_put, out_put, features)
 '''
 # 数据处理类，尝试标准化处理
 train_len = len(train_x)
-tra_test = pd.concat([train_x,test_x])
-scaler = StandardScaler()
+tra_test = np.vstack([train_x, test_x])
+SS_filter = StandardScaler()
+
+tra_test = SS_filter.fit_transform(tra_test)
+
+train_x = tra_test[0:train_len]
+test_x = tra_test[train_len:]
 
 '''
-
 
 # 创建训练模型
 model = create_model(in_put, out_put, features)
@@ -124,32 +142,62 @@ filepath = "../model/LSTM.ckpt"
 callback = ModelCheckpoint(filepath=filepath, monitor='val_loss',
                            verbose=1, save_best_only=True, save_weights_only=True,
                            model='min')
-history = model.fit(train_x, train_y, epochs=1, shuffle=False,
+history = model.fit(train_x, train_y, epochs=100, shuffle=True,
           validation_data=(test_x, test_y), callbacks=[callback])
 
-
-
-
-# # 绘制
-# plt.figure(figsize=(15,15),dpi=200)
-# plt.plot(history.history['loss'])
-# plt.plot(history.history['val_loss'])
-# plt.title('model train vs validation loss')
-# plt.ylabel('loss')
-# plt.xlabel('epoch')
-# plt.legend(['train','validation'], loc='upper right')
-# plt.show()
-
-
-
-
-
 # 加载最佳模型
-filepath = "../model/LSTM.ckpt"
+
 pre_model = create_model(in_put, out_put, features)
 pre_model.load_weights(filepath=filepath)
 
-# 选择最好的模型进程数据预测
+# 选择最好的模型进行数据预测
 predict_y = pre_model.predict(train_x)
-predict_y = pd.DataFrame(predict_y)
-predict_y.to_csv('../data/model_data/pre_{s_no}.csv'.format(s_no=s_no), encoding='gbk', index=False)
+predict_test_y = pre_model.predict(test_x)
+
+predict_y_ = pd.DataFrame(predict_y)
+predict_y_.to_csv('../data/model_data/pre_train_{s_no}.csv'.format(s_no=s_no), encoding='gbk', index=False)
+
+predict_test_y_ = pd.DataFrame(predict_test_y)
+predict_test_y_.to_csv('../data/model_data/pre_test_{s_no}.csv'.format(s_no=s_no), encoding='gbk', index=False)
+
+def draw_analyse():
+    
+    # 绘制训练集 loss 与验证集val_loss 的趋势变化
+    plt.figure(figsize=(15,15),dpi=200)
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model train vs validation loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train','validation'], loc='upper right')
+    plt.show()
+    
+    train_y_value = train_y[:,0]
+    predict_y_value = predict_y[:,0]
+    # 绘制测试集在本模型下的预测效果
+    plt.figure(figsize=(15, 15), dpi=200)
+    plt.plot(train_y_value)
+    plt.plot(predict_y_value)
+    plt.title('Train data true value and predict value')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'predict'], loc='upper right')
+    plt.show()
+    
+    test_y_value = test_y[:,0]
+    predict_test_y_value = predict_test_y[:,0]
+    # 绘制测试集在本模型下的预测效果
+    plt.figure(figsize=(15, 15), dpi=200)
+    plt.plot(test_y_value)
+    plt.plot(predict_test_y_value)
+    plt.title('Test data true value and predict value')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'predict'], loc='upper right')
+    plt.show()
+    
+    
+
+draw_analyse()
+
+
