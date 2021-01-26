@@ -5,6 +5,8 @@
 # Document  ：依次处理数据
 
 import os
+import numpy as np
+
 def main():
     
     os.system("python3 ../overpass/rain_feature.py")

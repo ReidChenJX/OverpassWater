@@ -128,7 +128,7 @@ filepath = "../model/LSTM.ckpt"
 callback = ModelCheckpoint(filepath=filepath, monitor='val_loss',
                            verbose=1, save_best_only=True, save_weights_only=True,
                            model='min')
-history = model.fit(train_x, train_y, epochs=1500, shuffle=True,
+history = model.fit(train_x, train_y, epochs=150, shuffle=True,
                     validation_data=(test_x, test_y), callbacks=[callback])
 
 # 加载最佳模型
@@ -162,7 +162,6 @@ def draw_analyse():
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'validation'], loc='upper right')
-    plt.savefig('D:\test.png')
     plt.show()
     
     train_y_value = train_y[:, 0]
