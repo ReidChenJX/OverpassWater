@@ -10,7 +10,6 @@ import cx_Oracle
 import pymssql
 import os
 from datetime import datetime, timedelta
-from multiprocessing import Process
 from dateutil.relativedelta import relativedelta
 
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
@@ -178,13 +177,9 @@ def sno_pump_data():
 def org_train_data():
     # 设置多进程，并行获取积水、降雨、泵站数据
     sno_pump_data()
-    overpass_data = Process(target=overpass_get)
-    rain_data = Process(target=rain_get)
-    pump_data = Process(target=pump_get)
-    
-    overpass_data.start()
-    rain_data.start()
-    pump_data.start()
+    overpass_get()
+    rain_get()
+    pump_get()
 
 
 '''并行获取测试集数据'''
@@ -304,10 +299,59 @@ def org_test_data():
     pump_data(start_time, end_time)
 
 
+'''获取下立交积水点的历史掉线数据'''
+
+
+def offline_overpass():
+    # 开启连接
+    conn_overpass = pymssql.connect(server='172.18.0.201', user='datareader',
+                                    password='WAVENET@1', database='PSCXLJ')
+    
+    offline_sql = open(file='./sql/offline_overpass.sql')
+    
+    list_text = offline_sql.readlines()
+    offline_sql.close()
+    sql_text = "".join(list_text)
+
+    offline_data = pd.read_sql(sql_text, con=conn_overpass)
+    offline_data.to_csv('../data/data/offline_data.csv', index=False, encoding='gbk')
+    
+    # 关闭连接
+    conn_overpass.close()
+    
+
+'''获取下立交S_NO与降雨点S_STATIONID的对应'''
+
+
+def sno_stationid():
+    # 从Oracle中获取S_NO 与 S_STATIONID 的对应，积水数据写入csv前需补充S_STATIONID的值
+    
+    conn_oracle = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
+
+    offline_sql = open(file='./sql/sno_stationid.sql')
+
+    list_text = offline_sql.readlines()
+    offline_sql.close()
+    sql_text = "".join(list_text)
+
+    sno_stationid_data = pd.read_sql(sql_text, con=conn_oracle)
+    sno_stationid_data.to_csv('../data/data/SNO_STATIONID.csv', index=False, encoding='gbk')
+
+    # 关闭连接
+    conn_oracle.close()
+    
+    
 
 if __name__ == '__main__':
-    # 获取训练集数据
-    # org_train_data()
-    # 获取测试集数据
-    org_test_data()
     
+    # 获取训练集数据
+    org_train_data()
+    
+    # # 获取测试集数据
+    # org_test_data()
+    
+    # # 获取下立交掉线数据
+    # offline_overpass()
+    
+    # # 获取 S_NO与S_STATIONID的维护
+    # sno_stationid()

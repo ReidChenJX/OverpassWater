@@ -14,7 +14,7 @@ plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
 任务一：绘制全年特定地区点的降雨与积水时序对比图
 
 '''
-Path_SNO = 2016050094
+Path_SNO = 2015060043
 
 
 def get_one(SNO):
@@ -126,3 +126,4 @@ plt.ylabel('Value')
 plt.xlabel('Time')
 plt.legend(['Rain_value', 'Flood_value'], loc='upper right')
 plt.show()
+rain_over_data.reset_index()
