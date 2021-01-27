@@ -397,8 +397,8 @@ if __name__ == '__main__':
     # # 获取下立交掉线数据
     # offline_overpass()
     
-    # # 获取 S_NO与S_STATIONID的维护
-    # sno_stationid()
+    # 获取 S_NO与S_STATIONID的维护
+    sno_stationid()
     
-    # 获取EDA数据
-    EDA_data()
+    # # 获取EDA数据
+    # EDA_data()
