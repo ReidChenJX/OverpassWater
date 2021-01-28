@@ -48,7 +48,12 @@ for i in range(2013, 2021, 1):
     
 
 year_nums = pd.DataFrame(year_nums, columns=['YEAR', 'NUMS'])
+# 每年在运行的积水点个数
+year_nums.to_csv('../data/EDAdata/每年在运行的积水点个数.csv', encoding='gbk', index=False)
+
 dist_sno_ = pd.DataFrame(dist_sno_, columns=['YEAR', 'S_DIST', 'NUMS'])
+# 各地区每年在运行的积水点个数
+dist_sno_.to_csv('../data/EDAdata/各地区每年在运行的积水点个数.csv', encoding='gbk', index=False)
 
 
 '''任务二：以10为界限，统计各地区每年的积水次数'''
@@ -94,9 +99,12 @@ def hydrops_data(pos_index):
                 water_deep = max(water_deep, value.N_VALUE)
             if value.N_VALUE < 10 and log == 0: continue  # 不积水
     
-    hydrops_data.to_csv('../data/EDAdata/hydrops_data.csv', encoding='gbk', index=False)
+    hydrops_data.to_csv('../data/EDAdata/每一次积水的时间与深度.csv', encoding='gbk', index=False)
     return hydrops_data
 
 s_no_index = all_data['S_NO'].drop_duplicates().values.tolist()
+# 每个积水点的积水时间、深度、等级表
 hydrops_data = hydrops_data(s_no_index)
+
+
 
