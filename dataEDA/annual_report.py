@@ -6,7 +6,8 @@
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+from dateutil.relativedelta import relativedelta
+
 
 # 下立交对应的积水点与区域信息
 sno_stainId = pd.read_csv('../data/data/SNO_STATIONID.csv', encoding='gbk')
@@ -190,8 +191,45 @@ except IOError:
 
 '''任务三：统计积水对应的降雨，降雨量，降雨时长，预测积水的持续时间，最大深度'''
 # 每一次积水的时间与深度
-EDArain_data = pd.read_csv('../data/EDAdata/EDAraindata.csv',encoding='gbk')
-
-time_deep = time_deep
 path_sno = 2015060043
+
+# 地点的降雨监测数据，以时间为索引
+EDArain_data = pd.read_csv('../data/EDAdata/EDAraindata.csv',encoding='gbk')
+EDArain_data['DT_TIME'] = pd.to_datetime(EDArain_data['DT_TIME'])
+EDArain_data.set_index('DT_TIME', inplace=True)
+EDArain_data.sort_index(inplace=True)
+
+# 时间排序的积水数据
+time_deep = time_deep[time_deep['S_NO'] == path_sno].copy(deep=True)
+time_deep['START_TIME'] = pd.to_datetime(time_deep['START_TIME'])
+time_deep['END_TIME'] = pd.to_datetime(time_deep['END_TIME'])
+time_deep.sort_values('START_TIME',inplace=True)
+
+time_deep[['duration', 'volume']] = np.nan
+for hydrop in time_deep.itertuples(index=True):
+    start_time, end_time = hydrop.START_TIME, hydrop.END_TIME
+    rain_start = start_time + relativedelta(hours=-12)
+    rain_end = end_time + relativedelta(hours=+12)
+    
+    rain_sec = EDArain_data.loc[rain_start:rain_end]
+    
+    # 降雨数据 5 分钟一次,取其中大于 1 的值
+    rain_sec_ = rain_sec[rain_sec['NM_RAINVALUE'] > 1]
+    duration = len(rain_sec_)*5     # 降雨持续时间 /分钟
+    volume = 0 if len(rain_sec_) == 0 else sum(rain_sec_.NM_RAINVALUE)
+    time_deep.loc[hydrop.Index,['duration', 'volume']] = duration, volume
+    
+# 统计积水持续时间： /分钟
+time_deep['hydrop_dur'] = time_deep['END_TIME'] - time_deep['START_TIME']
+time_deep['hydrop_dur'] = time_deep['hydrop_dur'].apply(lambda x: x.seconds / 60)
+time_deep.to_csv('../data/EDAdata/{path_sno}积水与降雨关系.csv'.format(path_sno=path_sno), encoding='gbk', index=False)
+    
+    
+    
+    
+    
+    
+
+
+
 
