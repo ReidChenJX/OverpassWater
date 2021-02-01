@@ -9,7 +9,7 @@ import pandas as pd
 import cx_Oracle
 import pymssql
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 os.environ['NLS_LANG'] = 'SIMPLIFIED CHINESE_CHINA.UTF8'
@@ -388,7 +388,6 @@ def EDA_data():
     # # 获取积水数据
     # EDA_hydrop_data(start_time, end_time)
     
-    
     # 降雨数据 ------------------
     def EDA_rain_data(start_time, end_time):
         
@@ -405,14 +404,14 @@ def EDA_data():
         offline_sql.close()
         # 将list类型的查询语句装换为str类型，
         sql_text = "".join(list_text)
-    
+        
         log = 0  # 分批次,0代表第一次，后续增加为1
         for i in range(10000):
-        
+            
             last_time = ETforST(start_time)  # 结束时间为向后推迟三个月
             # 未到结束时间
             if last_time < end_time:
-            
+                
                 sql = sql_text.format(start_time=start_time, end_time=last_time, s_stationid=s_stationid)
                 data = pd.read_sql(sql, con=conn_rain)
                 if log == 0:
@@ -426,7 +425,7 @@ def EDA_data():
                 data = pd.read_sql(sql, con=conn_rain)
                 data.to_csv('../data/EDAdata/EDAraindata.csv', mode='a', header=False, index=False, encoding='gbk')
                 break
-    
+        
         conn_rain.close()
     
     # 获取降雨数据

@@ -190,6 +190,8 @@ except IOError:
 
 '''任务三：统计积水对应的降雨，降雨量，降雨时长，预测积水的持续时间，最大深度'''
 # 每一次积水的时间与深度
+EDArain_data = pd.read_csv('../data/EDAdata/EDAraindata.csv',encoding='gbk')
+
 time_deep = time_deep
 path_sno = 2015060043
 
