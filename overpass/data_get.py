@@ -348,43 +348,89 @@ def sno_stationid():
 
 
 def EDA_data():
-    # 积水数据
+    # 积水数据 ------------------
     start_time = '2013-01-01 00:00:00'
-    end_time = '2020-12-01 23:59:59'
-
-    conn_overpass = pymssql.connect(server='172.18.0.201', user='datareader',
-                                    password='WAVENET@1', database='PSCXLJ')
+    end_time = '2020-12-31 23:59:59'
     
-    # 读取SQL文件，修改为可读的SQL语句
-    offline_sql = open(file='./sql/overpass.sql')
-    list_text = offline_sql.readlines()
-    offline_sql.close()
-    # 将list类型的查询语句装换为str类型，
-    sql_text = "".join(list_text)
-
-    log = 0  # 分批次,0代表第一次，后续增加为1
-    for i in range(10000):
+    def EDA_hydrop_data(start_time, end_time):
+        conn_overpass = pymssql.connect(server='172.18.0.201', user='datareader',
+                                        password='WAVENET@1', database='PSCXLJ')
+        # 读取SQL文件，修改为可读的SQL语句
+        offline_sql = open(file='./sql/overpass.sql')
+        list_text = offline_sql.readlines()
+        offline_sql.close()
+        # 将list类型的查询语句装换为str类型，
+        sql_text = "".join(list_text)
         
-        last_time = ETforST(start_time)      # 结束时间为向后推迟三个月
-        # 未到结束时间
-        if last_time < end_time:
+        log = 0  # 分批次,0代表第一次，后续增加为1
+        for i in range(10000):
             
-            sql = sql_text.format(start_time=start_time, end_time=last_time)
-            data = pd.read_sql(sql, con=conn_overpass)
-            if log == 0:
-                data.to_csv('../data/EDAdata/EDAoverpass.csv', index=False, encoding='gbk')
+            last_time = ETforST(start_time)  # 结束时间为向后推迟三个月
+            # 未到结束时间
+            if last_time < end_time:
+                
+                sql = sql_text.format(start_time=start_time, end_time=last_time)
+                data = pd.read_sql(sql, con=conn_overpass)
+                if log == 0:
+                    data.to_csv('../data/EDAdata/EDAoverpass.csv', index=False, encoding='gbk')
+                else:
+                    data.to_csv('../data/EDAdata/EDAoverpass.csv', mode='a', header=False, index=False, encoding='gbk')
+                log += 1
+                start_time = last_time
             else:
+                sql = sql_text.format(start_time=start_time, end_time=end_time)
+                data = pd.read_sql(sql, con=conn_overpass)
                 data.to_csv('../data/EDAdata/EDAoverpass.csv', mode='a', header=False, index=False, encoding='gbk')
-            log += 1
-            start_time = last_time
-        else:
-            sql = sql_text.format(start_time=start_time, end_time=end_time)
-            data = pd.read_sql(sql, con=conn_overpass)
-            data.to_csv('../data/EDAdata/EDAoverpass.csv', mode='a', header=False, index=False, encoding='gbk')
-            break
+                break
+        
+        conn_overpass.close()
+    
+    # # 获取积水数据
+    # EDA_hydrop_data(start_time, end_time)
+    
+    
+    # 降雨数据 ------------------
+    def EDA_rain_data(start_time, end_time):
+        
+        # 降雨数据量过大，采用单个积水点的对应点进行数据获取
+        PATH_SNO = 2015060043
+        sno_stainId = pd.read_csv('../data/data/SNO_STATIONID.csv', encoding='gbk')
+        # S_NO 对应的降雨监测点 S_STATIONID
+        s_stationid = sno_stainId[sno_stainId['S_NO'] == PATH_SNO]['S_STATIONID'].values[0]
+        
+        conn_rain = cx_Oracle.connect('YXJG_Wavenet', 'YXJG_Wavenet', '172.18.0.201:1521/yfzx')
+        # 读取SQL文件，修改为可读的SQL语句
+        offline_sql = open(file='./sql/EDArain.sql')
+        list_text = offline_sql.readlines()
+        offline_sql.close()
+        # 将list类型的查询语句装换为str类型，
+        sql_text = "".join(list_text)
+    
+        log = 0  # 分批次,0代表第一次，后续增加为1
+        for i in range(10000):
+        
+            last_time = ETforST(start_time)  # 结束时间为向后推迟三个月
+            # 未到结束时间
+            if last_time < end_time:
             
-    # 降雨数据
-    conn_overpass.close()
+                sql = sql_text.format(start_time=start_time, end_time=last_time, s_stationid=s_stationid)
+                data = pd.read_sql(sql, con=conn_rain)
+                if log == 0:
+                    data.to_csv('../data/EDAdata/EDAraindata.csv', index=False, encoding='gbk')
+                else:
+                    data.to_csv('../data/EDAdata/EDAraindata.csv', mode='a', header=False, index=False, encoding='gbk')
+                log += 1
+                start_time = last_time
+            else:
+                sql = sql_text.format(start_time=start_time, end_time=end_time, s_stationid=s_stationid)
+                data = pd.read_sql(sql, con=conn_rain)
+                data.to_csv('../data/EDAdata/EDAraindata.csv', mode='a', header=False, index=False, encoding='gbk')
+                break
+    
+        conn_rain.close()
+    
+    # 获取降雨数据
+    EDA_rain_data(start_time, end_time)
 
 
 if __name__ == '__main__':
@@ -398,7 +444,7 @@ if __name__ == '__main__':
     # offline_overpass()
     
     # 获取 S_NO与S_STATIONID的维护
-    sno_stationid()
+    # sno_stationid()
     
-    # # 获取EDA数据
-    # EDA_data()
+    # 获取EDA数据
+    EDA_data()
