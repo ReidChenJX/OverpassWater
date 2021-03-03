@@ -156,7 +156,7 @@ def region_rain(rain_data, observe_abute):
 if __name__ == '__main__':
     path = '../data/data/rain_data_test.csv'
     observe_rain_data = pd.read_csv(path, encoding='gbk')
-    
+
     # 对属性缺失值进行中文“无”的填充
     columns = ['S_STATIONNAME', 'S_DIST', 'S_XIANGZHEN']
     for column in columns:
